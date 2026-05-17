@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTool } from "../hooks/useTool";
+import { useMap } from "../state/store";
 import { ExploreView } from "./ExploreView";
 import { ExpandedSlide } from "./ExpandedSlide";
 import { PresenterView } from "./PresenterView";
+import { getOrderedSlides } from "./slideOrder";
 
 interface Props {
   // I viewer-bygget skjuler vi "Tilbake"-knappen siden det ikke finnes
@@ -27,6 +29,28 @@ export function PresentMode({ embedded = false }: Props = {}) {
   useEffect(() => {
     setExpandedSlide(null);
   }, [presentMode]);
+
+  const map = useMap();
+  const ordered = useMemo(() => getOrderedSlides(map), [map]);
+
+  // Piltaster navigerer mellom slides i utforsk-modus mens en slide er åpen.
+  // Vi bruker presentasjonsrekkefølgen (sortert på `slide:`-feltet); slides
+  // uten gyldig slide-nummer er ikke med i listen og kan ikke navigeres til
+  // herfra (lukker man ekspandert visning kan man fortsatt klikke dem).
+  useEffect(() => {
+    if (presentMode !== "explore" || !expandedSlide) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key !== "ArrowRight" && e.key !== "ArrowLeft") return;
+      const idx = ordered.findIndex((s) => s.node.id === expandedSlide);
+      if (idx < 0) return;
+      const next = e.key === "ArrowRight" ? idx + 1 : idx - 1;
+      if (next < 0 || next >= ordered.length) return;
+      e.preventDefault();
+      setExpandedSlide(ordered[next].node.id);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [presentMode, expandedSlide, ordered]);
 
   if (presentMode === "off") return null;
 
