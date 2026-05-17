@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { importFromHtml } from "./lib/importHtml";
 import { Canvas } from "./canvas/Canvas";
 import { StoreProvider, useStore } from "./state/store";
 import { ToolProvider } from "./hooks/useTool";
@@ -67,16 +68,40 @@ function Shell() {
   useSeed();
   useKeyboard();
   const { openSettings, openPresent, openExport } = useTool();
+  const { dispatch } = useStore();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // tillat samme fil igjen senere
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const parsed = await importFromHtml(text);
+      dispatch({ type: "REPLACE_ALL", file: parsed });
+    } catch (err) {
+      alert("Klarte ikke å åpne filen: " + (err as Error).message);
+    }
+  }
+
   return (
     <div className="flex h-screen w-screen flex-col">
       <Toolbar
         onOpenSettings={openSettings}
         onPresent={() => openPresent("explore")}
         onExport={openExport}
+        onOpenFile={() => fileInputRef.current?.click()}
       />
       <div className="flex-1">
         <Canvas />
       </div>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".html,text/html"
+        onChange={onFileSelected}
+        className="hidden"
+      />
       <ShortcutsHelp />
       <NodeEditor />
       <SettingsPanel />
