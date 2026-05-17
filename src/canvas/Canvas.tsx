@@ -24,7 +24,7 @@ import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE } from "../types";
 function CanvasInner() {
   const map = useMap();
   const { dispatch } = useStore();
-  const { tool, setTool } = useTool();
+  const { tool, setTool, openEditor } = useTool();
   const rf = useReactFlow();
 
   const nodes = useMemo<Node[]>(
@@ -133,6 +133,7 @@ function CanvasInner() {
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         onPaneClick={onPaneClick}
+        onNodeDoubleClick={(_, n) => openEditor(n.id)}
         deleteKeyCode={["Delete", "Backspace"]}
         fitView
         proOptions={{ hideAttribution: true }}

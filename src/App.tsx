@@ -5,6 +5,7 @@ import { ToolProvider } from "./hooks/useTool";
 import { useKeyboard } from "./hooks/useKeyboard";
 import { Toolbar } from "./toolbar/Toolbar";
 import { ShortcutsHelp } from "./modals/ShortcutsHelp";
+import { NodeEditor } from "./modals/NodeEditor";
 import { newId } from "./lib/id";
 import { DEFAULT_SLIDE_SIZE } from "./types";
 
@@ -59,6 +60,7 @@ function Shell() {
         <Canvas />
       </div>
       <ShortcutsHelp />
+      <NodeEditor />
     </div>
   );
 }
