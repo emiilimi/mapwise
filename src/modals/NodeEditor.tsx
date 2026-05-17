@@ -128,10 +128,16 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
                 {preview.summary ?? "—"}
               </span>
             </span>
-            <span>
+            <span className="mr-3">
               textSize:{" "}
               <span className={preview.textSize === null ? "text-neutral-400" : "text-neutral-900"}>
                 {preview.textSize ?? "—"}
+              </span>
+            </span>
+            <span>
+              fixedForm:{" "}
+              <span className={preview.fixedForm === null ? "text-neutral-400" : "text-neutral-900"}>
+                {preview.fixedForm === null ? "—" : String(preview.fixedForm)}
               </span>
             </span>
           </div>

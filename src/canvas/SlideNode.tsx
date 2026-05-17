@@ -11,7 +11,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 import { useFitText } from "../lib/useFitText";
-import { useMap } from "../state/store";
+import { useMap, useStore } from "../state/store";
 import { parseAspectRatio } from "../types";
 import { usePresentContext } from "./PresentContext";
 import type { SlideNode as SlideNodeData } from "../types";
@@ -25,16 +25,21 @@ export type SlideFlowNode = Node<{ markdown: string }, "slide">;
 const zoomSelector = (s: { transform: [number, number, number] }) =>
   s.transform[2];
 
-function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
-  const { slide, thumbnail, summary, textSize, body } = useMemo(
-    () => parseFrontmatter(data.markdown),
-    [data.markdown],
-  );
+function SlideNodeImpl({
+  id,
+  data,
+  selected,
+  width,
+  height,
+}: NodeProps<SlideFlowNode>) {
+  const { slide, thumbnail, summary, textSize, fixedForm: slideFixed, body } =
+    useMemo(() => parseFrontmatter(data.markdown), [data.markdown]);
   const baseFontSize = textSize ?? DEFAULT_SLIDE_TEXT_SIZE;
 
   const zoom = useRfStore(zoomSelector);
   const settings = useMap().settings;
-  const fixedForm = settings.fixedForm;
+  // Per-slide-frontmatter overstyrer kart-innstillingen.
+  const fixedForm = slideFixed ?? settings.fixedForm;
   const { inPresent } = usePresentContext();
   const showThumbnail = zoom < settings.zoomThreshold;
   const aspect = settings.fixedForm
@@ -63,6 +68,35 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
   // Auto-fit i fast form. Hooket setter inline font-size; vi clearer den
   // ved disable så CSS-default fra textSize tar over.
   useFitText(contentRef, body, fixedForm);
+
+  // Contain-modus: bare i fri form. Vokser boksens høyde til all tekst
+  // får plass. Krymper ikke (brukeren kan dra hjørnet ned manuelt).
+  const containEnabled = !fixedForm && settings.containMode;
+  const { dispatch } = useStore();
+  const lastContainHeight = useRef(-1);
+  useEffect(() => {
+    if (!containEnabled) return;
+    const inner = contentRef.current;
+    if (!inner) return;
+    function measure() {
+      const inner = contentRef.current;
+      if (!inner) return;
+      const delta = inner.scrollHeight - inner.clientHeight;
+      if (delta <= 1) return;
+      const target = (height ?? 200) + delta;
+      if (Math.abs(target - lastContainHeight.current) < 2) return;
+      lastContainHeight.current = target;
+      dispatch({
+        type: "RESIZE_NODE",
+        id,
+        size: { width: width ?? 320, height: Math.round(target) },
+      });
+    }
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(inner);
+    return () => ro.disconnect();
+  }, [containEnabled, body, dispatch, id, width, height]);
 
   // På kartet (editor + utforsk-modus uvalgt slide) vises summary som en
   // italic linje rett over body når innholdet ikke får plass. Settings-

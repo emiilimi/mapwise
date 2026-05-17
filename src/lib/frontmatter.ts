@@ -5,6 +5,8 @@ export interface ParsedFrontmatter {
   thumbnail: string | null;
   summary: string | null;
   textSize: number | null;
+  // null = arv kart-innstillingen settings.fixedForm.
+  fixedForm: boolean | null;
   body: string;
 }
 
@@ -34,6 +36,7 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
       thumbnail: null,
       summary: null,
       textSize: null,
+      fixedForm: null,
       body: markdown,
     };
   }
@@ -51,6 +54,7 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
       thumbnail: null,
       summary: null,
       textSize: null,
+      fixedForm: null,
       body: markdown,
     };
   }
@@ -94,5 +98,17 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
         ? Number(rawTextSize)
         : null;
 
-  return { slide, thumbnail, summary, textSize, body };
+  const rawFixed = data.fixedForm;
+  const fixedForm =
+    typeof rawFixed === "boolean"
+      ? rawFixed
+      : typeof rawFixed === "string"
+        ? rawFixed.toLowerCase() === "true"
+          ? true
+          : rawFixed.toLowerCase() === "false"
+            ? false
+            : null
+        : null;
+
+  return { slide, thumbnail, summary, textSize, fixedForm, body };
 }
