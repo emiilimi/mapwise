@@ -1,10 +1,17 @@
 import { memo, useEffect, useMemo, useRef, useState } from "react";
 import type { NodeProps } from "@xyflow/react";
-import { Handle, Position, useStore as useRfStore, type Node } from "@xyflow/react";
+import {
+  Handle,
+  NodeResizer,
+  Position,
+  useStore as useRfStore,
+  type Node,
+} from "@xyflow/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 import { useMap } from "../state/store";
+import { parseAspectRatio } from "../types";
 import { usePresentContext } from "./PresentContext";
 import type { SlideNode as SlideNodeData } from "../types";
 
@@ -28,6 +35,9 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
   const settings = useMap().settings;
   const { inPresent } = usePresentContext();
   const showThumbnail = zoom < settings.zoomThreshold;
+  const aspect = settings.fixedForm
+    ? parseAspectRatio(settings.aspectRatio)
+    : null;
 
   // Overflow-detect på markdown-body. ResizeObserver fanger både endringer
   // i innholdets høyde og når brukeren resizer noden.
@@ -61,6 +71,14 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
           : "border-neutral-300 hover:shadow")
       }
     >
+      <NodeResizer
+        minWidth={120}
+        minHeight={80}
+        isVisible={selected}
+        keepAspectRatio={aspect !== null}
+        lineClassName="!border-blue-400"
+        handleClassName="!bg-blue-500 !border-white"
+      />
       <Handle type="target" position={Position.Top} className="!bg-neutral-400" />
 
       {(slide !== null || thumbnail) && (

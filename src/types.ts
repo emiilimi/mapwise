@@ -40,6 +40,13 @@ export interface MapSettings {
   // men kan slås på her.
   showSummaryInPresent: boolean;
   summaryPosition: "top" | "bottom";
+  // Kart-stil. Fast form = alle slides har samme sideforhold (aspectRatio);
+  // tekst auto-fittes til å få plass. Fri form = fri størrelse, overflow klippes.
+  fixedForm: boolean;
+  aspectRatio: string; // f.eks. "16:9", "4:3", "1:1"
+  // Bare aktiv når fixedForm=false: boksen utvides automatisk i høyden for
+  // å romme innholdet.
+  containMode: boolean;
 }
 
 export const FILE_VERSION = "0.1.0";
@@ -50,7 +57,20 @@ export const DEFAULT_SETTINGS: MapSettings = {
   canvasBackground: "#f5f5f5",
   showSummaryInPresent: false,
   summaryPosition: "bottom",
+  fixedForm: false,
+  aspectRatio: "16:9",
+  containMode: false,
 };
+
+// Parser "16:9" til numerisk forhold. Returnerer null for ugyldig input.
+export function parseAspectRatio(s: string): number | null {
+  const m = /^\s*(\d+(?:\.\d+)?)\s*:\s*(\d+(?:\.\d+)?)\s*$/.exec(s);
+  if (!m) return null;
+  const w = Number(m[1]);
+  const h = Number(m[2]);
+  if (!Number.isFinite(w) || !Number.isFinite(h) || h === 0) return null;
+  return w / h;
+}
 
 export const DEFAULT_SLIDE_SIZE = { width: 320, height: 200 };
 

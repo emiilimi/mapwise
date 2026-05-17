@@ -70,6 +70,17 @@ function CanvasInner() {
       for (const c of changes) {
         if (c.type === "position" && !c.dragging && c.position) {
           dispatch({ type: "MOVE_NODE", id: c.id, position: c.position });
+        } else if (c.type === "dimensions" && c.dimensions && c.resizing) {
+          // Bare dispatch under aktiv resize-drag — RF fyrer også off dimensions
+          // ved layout-måling, som ikke skal lagres.
+          dispatch({
+            type: "RESIZE_NODE",
+            id: c.id,
+            size: {
+              width: Math.round(c.dimensions.width),
+              height: Math.round(c.dimensions.height),
+            },
+          });
         } else if (c.type === "remove") {
           removed.push(c.id);
         }

@@ -18,15 +18,15 @@ export interface HistoryState {
   past: MapState[];
   present: MapState;
   future: MapState[];
-  // Sporing for MOVE_NODE-merge. Null når siste handling ikke var en move.
-  lastMove: { id: string; at: number } | null;
+  // Sporing for MOVE/RESIZE-merge. Null når siste handling ikke var en drag.
+  lastDrag: { id: string; kind: "move" | "resize"; at: number } | null;
 }
 
 export const initialHistoryState: HistoryState = {
   past: [],
   present: initialMapState,
   future: [],
-  lastMove: null,
+  lastDrag: null,
 };
 
 export type HistoryAction =
@@ -50,19 +50,31 @@ export function historyReducer(
       const next = mapReducer(state.present, ha.action);
       if (next === state.present) return state;
 
-      // MOVE_NODE-merge: behold snapshotet fra før draget startet.
-      if (ha.action.type === "MOVE_NODE") {
+      // MOVE/RESIZE-merge: behold snapshotet fra før draget startet.
+      const dragKind: "move" | "resize" | null =
+        ha.action.type === "MOVE_NODE"
+          ? "move"
+          : ha.action.type === "RESIZE_NODE"
+            ? "resize"
+            : null;
+
+      if (dragKind !== null) {
+        const id =
+          ha.action.type === "MOVE_NODE" || ha.action.type === "RESIZE_NODE"
+            ? ha.action.id
+            : "";
         const now = Date.now();
         const sameDrag =
-          state.lastMove !== null &&
-          state.lastMove.id === ha.action.id &&
-          now - state.lastMove.at < MOVE_MERGE_WINDOW_MS;
+          state.lastDrag !== null &&
+          state.lastDrag.id === id &&
+          state.lastDrag.kind === dragKind &&
+          now - state.lastDrag.at < MOVE_MERGE_WINDOW_MS;
 
         return {
           past: sameDrag ? state.past : pushPast(state.past, state.present),
           present: next,
           future: [],
-          lastMove: { id: ha.action.id, at: now },
+          lastDrag: { id, kind: dragKind, at: now },
         };
       }
 
@@ -70,7 +82,7 @@ export function historyReducer(
         past: pushPast(state.past, state.present),
         present: next,
         future: [],
-        lastMove: null,
+        lastDrag: null,
       };
     }
 
@@ -81,7 +93,7 @@ export function historyReducer(
         past: state.past.slice(0, -1),
         present: previous,
         future: [state.present, ...state.future],
-        lastMove: null,
+        lastDrag: null,
       };
     }
 
@@ -92,7 +104,7 @@ export function historyReducer(
         past: pushPast(state.past, state.present),
         present: next,
         future: rest,
-        lastMove: null,
+        lastDrag: null,
       };
     }
   }

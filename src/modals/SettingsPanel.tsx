@@ -92,6 +92,76 @@ export function SettingsPanel() {
           </Field>
 
           <div className="border-t border-neutral-100 pt-4">
+            <div className="mb-1 font-medium text-neutral-800">Slide-stil</div>
+            <p className="mb-2 text-xs text-neutral-500">
+              <strong>Fast form</strong> låser alle slides til et felles
+              sideforhold (som PowerPoint) og krymper tekst automatisk for å få
+              plass. <strong>Fri form</strong> lar bokser ha valgfri størrelse;
+              overflow klippes.
+            </p>
+            <label className="mb-2 flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={settings.fixedForm}
+                onChange={(e) =>
+                  dispatch({
+                    type: "UPDATE_SETTINGS",
+                    patch: { fixedForm: e.target.checked },
+                  })
+                }
+              />
+              <span>Fast form (PowerPoint-stil)</span>
+            </label>
+            <label
+              className={
+                "ml-6 mb-2 flex items-center gap-2 text-xs " +
+                (settings.fixedForm ? "text-neutral-700" : "text-neutral-400")
+              }
+            >
+              <span>Sideforhold:</span>
+              <input
+                type="text"
+                list="aspect-ratio-options"
+                value={settings.aspectRatio}
+                disabled={!settings.fixedForm}
+                onChange={(e) =>
+                  dispatch({
+                    type: "UPDATE_SETTINGS",
+                    patch: { aspectRatio: e.target.value },
+                  })
+                }
+                className="w-20 rounded border border-neutral-300 px-2 py-0.5 disabled:bg-neutral-50"
+                placeholder="16:9"
+              />
+              <datalist id="aspect-ratio-options">
+                <option value="16:9" />
+                <option value="4:3" />
+                <option value="1:1" />
+                <option value="3:2" />
+              </datalist>
+            </label>
+            <label
+              className={
+                "flex items-center gap-2 " +
+                (settings.fixedForm ? "text-neutral-400" : "text-neutral-700")
+              }
+            >
+              <input
+                type="checkbox"
+                checked={settings.containMode}
+                disabled={settings.fixedForm}
+                onChange={(e) =>
+                  dispatch({
+                    type: "UPDATE_SETTINGS",
+                    patch: { containMode: e.target.checked },
+                  })
+                }
+              />
+              <span>Contain (boks vokser for å romme tekst)</span>
+            </label>
+          </div>
+
+          <div className="border-t border-neutral-100 pt-4">
             <div className="mb-1 font-medium text-neutral-800">
               Oppsummering
             </div>

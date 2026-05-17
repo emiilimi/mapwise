@@ -25,6 +25,7 @@ export type MapAction =
   | { type: "ADD_NODE"; node: AnyNode }
   | { type: "UPDATE_NODE"; id: string; patch: Partial<AnyNode> }
   | { type: "MOVE_NODE"; id: string; position: { x: number; y: number } }
+  | { type: "RESIZE_NODE"; id: string; size: { width: number; height: number } }
   | { type: "DELETE_NODES"; ids: string[] }
   | { type: "ADD_EDGE"; edge: Arrow }
   | { type: "DELETE_EDGES"; ids: string[] }
@@ -56,6 +57,16 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
         nodes: state.nodes.map((n) =>
           n.id === action.id ? { ...n, position: action.position } : n,
         ),
+      };
+
+    case "RESIZE_NODE":
+      return {
+        ...state,
+        nodes: state.nodes.map((n) => {
+          if (n.id !== action.id) return n;
+          if (n.type !== "slide") return n; // bare slides har eksplisitt size
+          return { ...n, size: action.size };
+        }),
       };
 
     case "DELETE_NODES": {
