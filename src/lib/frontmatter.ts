@@ -1,4 +1,4 @@
-import matter from "gray-matter";
+import yaml from "js-yaml";
 
 export interface ParsedFrontmatter {
   slide: number | null;
@@ -6,27 +6,45 @@ export interface ParsedFrontmatter {
   body: string;
 }
 
-// gray-matter er Node-targeted og bruker Buffer i input-checks. Vi gir den
-// alltid en streng, så det går fint i nettleseren. YAML-parsingen i seg selv
-// (js-yaml) er plattformuavhengig og takler kolon-i-tekst, sitater og innrykk
-// som vi ellers måtte løse med en egen parser.
+// Vi bruker js-yaml direkte i stedet for gray-matter. gray-matter bundler
+// inn flere Node-spesifikke avhengigheter (kind-of m.fl.) som "fungerer"
+// stille feil i nettleseren — parsen mislyktes uten å kaste, og badge/preview
+// viste alltid tomt. js-yaml er plattformuavhengig og dekker fortsatt
+// YAML-edge-cases (kolon-i-streng, sitater, innrykk).
+
+// Matcher en YAML-frontmatter-blokk øverst i dokumentet:
+//   ---
+//   key: value
+//   ---
+// Tar høyde for både \n og \r\n linjeskift.
+const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 
 export function parseFrontmatter(markdown: string): ParsedFrontmatter {
-  let data: Record<string, unknown> = {};
-  let body = markdown;
-  try {
-    const parsed = matter(markdown);
-    data = parsed.data as Record<string, unknown>;
-    body = parsed.content;
-  } catch {
-    // Ugyldig YAML: behold rå markdown, ingen frontmatter.
+  const match = FRONTMATTER_RE.exec(markdown);
+  if (!match) {
+    return { slide: null, thumbnail: null, body: markdown };
   }
+
+  let data: Record<string, unknown> = {};
+  try {
+    const parsed = yaml.load(match[1]);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      data = parsed as Record<string, unknown>;
+    }
+  } catch {
+    // Ugyldig YAML: la som om frontmatter ikke finnes — vis hele teksten som body.
+    return { slide: null, thumbnail: null, body: markdown };
+  }
+
+  const body = markdown.slice(match[0].length);
 
   const rawSlide = data.slide;
   const slide =
     typeof rawSlide === "number" && Number.isFinite(rawSlide)
       ? rawSlide
-      : typeof rawSlide === "string" && rawSlide.trim() !== "" && !Number.isNaN(Number(rawSlide))
+      : typeof rawSlide === "string" &&
+          rawSlide.trim() !== "" &&
+          !Number.isNaN(Number(rawSlide))
         ? Number(rawSlide)
         : null;
 
