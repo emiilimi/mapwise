@@ -11,7 +11,7 @@ import {
   initialHistoryState,
   type HistoryState,
 } from "./history";
-import type { MapAction } from "./reducer";
+import type { MapAction, MapState } from "./reducer";
 
 interface StoreContextValue {
   state: HistoryState;
@@ -24,8 +24,19 @@ interface StoreContextValue {
 
 const StoreContext = createContext<StoreContextValue | null>(null);
 
-export function StoreProvider({ children }: { children: ReactNode }) {
-  const [state, send] = useReducer(historyReducer, initialHistoryState);
+export function StoreProvider({
+  children,
+  initial,
+}: {
+  children: ReactNode;
+  initial?: MapState;
+}) {
+  const [state, send] = useReducer(
+    historyReducer,
+    initial
+      ? { ...initialHistoryState, present: initial }
+      : initialHistoryState,
+  );
 
   const dispatch = useCallback(
     (action: MapAction) => send({ type: "DO", action }),

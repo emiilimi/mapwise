@@ -4,7 +4,13 @@ import { ExploreView } from "./ExploreView";
 import { ExpandedSlide } from "./ExpandedSlide";
 import { PresenterView } from "./PresenterView";
 
-export function PresentMode() {
+interface Props {
+  // I viewer-bygget skjuler vi "Tilbake"-knappen siden det ikke finnes
+  // noen editor å vende tilbake til.
+  embedded?: boolean;
+}
+
+export function PresentMode({ embedded = false }: Props = {}) {
   const { presentMode, closePresent, setPresentMode } = useTool();
   const [expandedSlide, setExpandedSlide] = useState<string | null>(null);
 
@@ -53,13 +59,15 @@ export function PresentMode() {
             Presenter
           </button>
         </div>
-        <button
-          onClick={closePresent}
-          className="ml-auto rounded px-2 py-1 text-sm hover:bg-neutral-100"
-          title="Tilbake til editor (Esc)"
-        >
-          ✕ Tilbake
-        </button>
+        {!embedded && (
+          <button
+            onClick={closePresent}
+            className="ml-auto rounded px-2 py-1 text-sm hover:bg-neutral-100"
+            title="Tilbake til editor (Esc)"
+          >
+            ✕ Tilbake
+          </button>
+        )}
       </div>
 
       <div className="absolute inset-0 pt-11">
