@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Canvas } from "./canvas/Canvas";
 import { StoreProvider, useStore } from "./state/store";
 import { ToolProvider } from "./hooks/useTool";
@@ -14,8 +14,17 @@ import { DEFAULT_SLIDE_SIZE } from "./types";
 // Midlertidig seed for å se noe på kartet før import/eksport finnes.
 function useSeed() {
   const { state, dispatch } = useStore();
+  // StrictMode kjører effekten to ganger i dev; closure-kapret state er
+  // tom begge ganger. Uten denne guarden dispatches seedet to ganger og vi
+  // får overlappende duplikater av alle noder.
+  const seeded = useRef(false);
   useEffect(() => {
-    if (state.present.nodes.length > 0) return;
+    if (seeded.current) return;
+    if (state.present.nodes.length > 0) {
+      seeded.current = true;
+      return;
+    }
+    seeded.current = true;
     const a = newId();
     const b = newId();
     dispatch({
