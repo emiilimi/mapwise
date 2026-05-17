@@ -1,3 +1,14 @@
+// Belt-and-suspenders: noen avhengigheter sjekker `process` direkte (ikke
+// bare `process.env.NODE_ENV`). Vite's define dekker det første, denne
+// stubben dekker det andre. Må kjøre før noen andre import-er evalueres.
+declare global {
+  // eslint-disable-next-line no-var
+  var process: { env: Record<string, string | undefined> } | undefined;
+}
+if (typeof globalThis.process === "undefined") {
+  globalThis.process = { env: { NODE_ENV: "production" } };
+}
+
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ViewerApp } from "./ViewerApp";

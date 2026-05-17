@@ -10,6 +10,12 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   // outDir == public ville ellers kollidere med default publicDir.
   publicDir: false,
+  // Vite i lib-modus erstatter ikke process.env.NODE_ENV automatisk.
+  // Uten dette ender React/avhengigheter med å sjekke en undefined `process`
+  // i nettleseren og krasje (Uncaught ReferenceError: process is not defined).
+  define: {
+    "process.env.NODE_ENV": JSON.stringify("production"),
+  },
   build: {
     outDir: "public",
     emptyOutDir: false,
