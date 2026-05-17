@@ -86,7 +86,8 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
       >
         {showSummary && summary && (
           <p
-            className="mb-1 italic text-neutral-600"
+            className="mb-1 italic leading-tight text-neutral-600"
+            style={{ fontSize: "0.5em" }}
             title={summary}
           >
             {summary}
