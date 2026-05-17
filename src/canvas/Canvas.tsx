@@ -4,26 +4,28 @@ import {
   Controls,
   MarkerType,
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+  type Connection,
   type Edge,
+  type EdgeChange,
   type Node,
   type NodeChange,
-  type Connection,
-  type EdgeChange,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useMap, useStore } from "../state/store";
+import { useTool } from "../hooks/useTool";
 import { toFlowNode as toSlideFlow } from "./SlideNode";
 import { toFlowNode as toTextFlow } from "./TextNode";
 import { nodeTypes } from "./nodeTypes";
 import { newId } from "../lib/id";
+import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE } from "../types";
 
-// Vi lar React Flow rapportere position-endringer via onNodesChange, og
-// mapper bare "position"-changes med dragging=false (= drag avsluttet) til
-// MOVE_NODE. Drag-merge-logikken i history.ts håndterer mellom-frames hvis
-// vi senere sender flere events under draget.
-export function Canvas() {
+function CanvasInner() {
   const map = useMap();
   const { dispatch } = useStore();
+  const { tool, setTool } = useTool();
+  const rf = useReactFlow();
 
   const nodes = useMemo<Node[]>(
     () =>
@@ -39,7 +41,7 @@ export function Canvas() {
         id: e.id,
         source: e.from,
         target: e.to,
-        type: "default", // bezier
+        type: "default",
         markerEnd: { type: MarkerType.ArrowClosed },
       })),
     [map.edges],
@@ -47,11 +49,15 @@ export function Canvas() {
 
   const onNodesChange = useCallback(
     (changes: NodeChange[]) => {
+      const removed: string[] = [];
       for (const c of changes) {
         if (c.type === "position" && !c.dragging && c.position) {
           dispatch({ type: "MOVE_NODE", id: c.id, position: c.position });
+        } else if (c.type === "remove") {
+          removed.push(c.id);
         }
       }
+      if (removed.length > 0) dispatch({ type: "DELETE_NODES", ids: removed });
     },
     [dispatch],
   );
@@ -61,9 +67,7 @@ export function Canvas() {
       const removed = changes
         .filter((c): c is EdgeChange & { type: "remove" } => c.type === "remove")
         .map((c) => c.id);
-      if (removed.length > 0) {
-        dispatch({ type: "DELETE_EDGES", ids: removed });
-      }
+      if (removed.length > 0) dispatch({ type: "DELETE_EDGES", ids: removed });
     },
     [dispatch],
   );
@@ -79,10 +83,47 @@ export function Canvas() {
     [dispatch],
   );
 
+  // Klikk på tom canvas: plasser ny node hvis vi er i S/T-modus.
+  const onPaneClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (tool !== "slide" && tool !== "text") return;
+      const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      if (tool === "slide") {
+        dispatch({
+          type: "ADD_NODE",
+          node: {
+            type: "slide",
+            id: newId(),
+            position: pos,
+            size: DEFAULT_SLIDE_SIZE,
+            markdown: DEFAULT_SLIDE_MARKDOWN,
+          },
+        });
+      } else {
+        dispatch({
+          type: "ADD_NODE",
+          node: {
+            type: "text",
+            id: newId(),
+            position: pos,
+            content: "Nytt notat",
+          },
+        });
+      }
+      setTool("select");
+    },
+    [tool, rf, dispatch, setTool],
+  );
+
+  const placementMode = tool === "slide" || tool === "text";
+
   return (
     <div
       className="h-full w-full"
-      style={{ background: map.settings.canvasBackground }}
+      style={{
+        background: map.settings.canvasBackground,
+        cursor: placementMode ? "crosshair" : undefined,
+      }}
     >
       <ReactFlow
         nodes={nodes}
@@ -91,6 +132,8 @@ export function Canvas() {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onPaneClick={onPaneClick}
+        deleteKeyCode={["Delete", "Backspace"]}
         fitView
         proOptions={{ hideAttribution: true }}
       >
@@ -98,5 +141,13 @@ export function Canvas() {
         <Controls />
       </ReactFlow>
     </div>
+  );
+}
+
+export function Canvas() {
+  return (
+    <ReactFlowProvider>
+      <CanvasInner />
+    </ReactFlowProvider>
   );
 }

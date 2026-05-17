@@ -1,10 +1,14 @@
 import { useEffect } from "react";
 import { Canvas } from "./canvas/Canvas";
-import { StoreProvider, useMap, useStore } from "./state/store";
+import { StoreProvider, useStore } from "./state/store";
+import { ToolProvider } from "./hooks/useTool";
+import { useKeyboard } from "./hooks/useKeyboard";
+import { Toolbar } from "./toolbar/Toolbar";
+import { ShortcutsHelp } from "./modals/ShortcutsHelp";
 import { newId } from "./lib/id";
-import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE } from "./types";
+import { DEFAULT_SLIDE_SIZE } from "./types";
 
-// Midlertidig seed for Steg 3. Erstattes når åpne-fil/ny-fil kommer på plass.
+// Midlertidig seed for å se noe på kartet før import/eksport finnes.
 function useSeed() {
   const { state, dispatch } = useStore();
   useEffect(() => {
@@ -28,7 +32,7 @@ function useSeed() {
         id: b,
         position: { x: 420, y: 0 },
         size: DEFAULT_SLIDE_SIZE,
-        markdown: DEFAULT_SLIDE_MARKDOWN,
+        markdown: `---\nslide: 2\nthumbnail: Hovedpoeng\n---\n\n# Punkt to\n\n- Linje\n- Linje\n`,
       },
     });
     dispatch({
@@ -45,58 +49,16 @@ function useSeed() {
   }, []);
 }
 
-function DevToolbar() {
-  const map = useMap();
-  const { dispatch, undo, redo, canUndo, canRedo } = useStore();
-  return (
-    <div className="flex items-center gap-2 border-b border-neutral-200 bg-white px-4 py-2 text-sm">
-      <strong className="mr-2">MapShow</strong>
-      <button
-        className="rounded border border-neutral-300 px-2 py-0.5 hover:bg-neutral-100"
-        onClick={() =>
-          dispatch({
-            type: "ADD_NODE",
-            node: {
-              type: "slide",
-              id: newId(),
-              position: { x: 100 + map.nodes.length * 30, y: 400 },
-              size: DEFAULT_SLIDE_SIZE,
-              markdown: DEFAULT_SLIDE_MARKDOWN,
-            },
-          })
-        }
-      >
-        + Slide
-      </button>
-      <button
-        disabled={!canUndo}
-        className="rounded border border-neutral-300 px-2 py-0.5 hover:bg-neutral-100 disabled:opacity-40"
-        onClick={undo}
-      >
-        Angre
-      </button>
-      <button
-        disabled={!canRedo}
-        className="rounded border border-neutral-300 px-2 py-0.5 hover:bg-neutral-100 disabled:opacity-40"
-        onClick={redo}
-      >
-        Gj&oslash;r om
-      </button>
-      <span className="ml-auto text-xs text-neutral-500">
-        Steg 3 &mdash; midlertidig dev-toolbar
-      </span>
-    </div>
-  );
-}
-
 function Shell() {
   useSeed();
+  useKeyboard();
   return (
     <div className="flex h-screen w-screen flex-col">
-      <DevToolbar />
+      <Toolbar onOpenSettings={() => { /* TODO Steg 9 */ }} />
       <div className="flex-1">
         <Canvas />
       </div>
+      <ShortcutsHelp />
     </div>
   );
 }
@@ -104,7 +66,9 @@ function Shell() {
 export default function App() {
   return (
     <StoreProvider>
-      <Shell />
+      <ToolProvider>
+        <Shell />
+      </ToolProvider>
     </StoreProvider>
   );
 }
