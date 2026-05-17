@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { parseFrontmatter } from "../lib/frontmatter";
+import { useFitText } from "../lib/useFitText";
 import { useMap } from "../state/store";
 import { useTool } from "../hooks/useTool";
+import { parseAspectRatio } from "../types";
 import { getOrderedSlides } from "./slideOrder";
 import { splitSteps } from "./stepSplitter";
 
@@ -21,6 +24,17 @@ export function PresenterView() {
   const showSummary =
     map.settings.showSummaryInPresent && !!current?.summary;
   const summaryAtTop = map.settings.summaryPosition === "top";
+  // Per-slide override via frontmatter.fixedForm.
+  const slideFixed = useMemo(
+    () => (current ? parseFrontmatter(current.node.markdown).fixedForm : null),
+    [current],
+  );
+  const effectiveFixed = slideFixed ?? map.settings.fixedForm;
+  const aspect = effectiveFixed
+    ? parseAspectRatio(map.settings.aspectRatio) ?? 16 / 9
+    : null;
+  const fitRef = useRef<HTMLDivElement>(null);
+  useFitText(fitRef, current?.body ?? "", effectiveFixed, 14, 120);
   const segments = useMemo(
     () => (current ? splitSteps(current.body) : [""]),
     [current],
@@ -87,23 +101,58 @@ export function PresenterView() {
             {current?.summary}
           </div>
         )}
-        <div className="flex flex-1 items-center justify-center">
-          <div className="markdown-body max-w-4xl text-lg leading-relaxed">
-            {segments.map((seg, i) => (
+        {effectiveFixed ? (
+          // Fast form: aspect-låst container som fyller skjermen, auto-fit
+          // basert på fullt body-innhold (alle steg synlige for fitter, men
+          // opacity skjuler de uavslørte).
+          <div className="flex flex-1 items-center justify-center">
+            <div
+              className="w-full overflow-hidden rounded border border-neutral-200 bg-white shadow-lg"
+              style={{
+                aspectRatio: String(aspect),
+                maxHeight: "100%",
+                maxWidth: "100%",
+              }}
+            >
               <div
-                key={i}
-                className="transition-opacity duration-300"
-                style={{
-                  opacity: i <= step ? 1 : 0,
-                  pointerEvents: i <= step ? "auto" : "none",
-                }}
-                aria-hidden={i > step}
+                ref={fitRef}
+                className="markdown-body h-full w-full overflow-hidden p-10 leading-snug"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg}</ReactMarkdown>
+                {segments.map((seg, i) => (
+                  <div
+                    key={i}
+                    className="transition-opacity duration-300"
+                    style={{
+                      opacity: i <= step ? 1 : 0,
+                      pointerEvents: i <= step ? "auto" : "none",
+                    }}
+                    aria-hidden={i > step}
+                  >
+                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg}</ReactMarkdown>
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex flex-1 items-center justify-center">
+            <div className="markdown-body max-w-4xl text-lg leading-relaxed">
+              {segments.map((seg, i) => (
+                <div
+                  key={i}
+                  className="transition-opacity duration-300"
+                  style={{
+                    opacity: i <= step ? 1 : 0,
+                    pointerEvents: i <= step ? "auto" : "none",
+                  }}
+                  aria-hidden={i > step}
+                >
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg}</ReactMarkdown>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {showSummary && !summaryAtTop && (
           <div className="mx-auto mt-6 max-w-4xl rounded bg-yellow-50 px-4 py-2 text-sm italic text-neutral-700 ring-1 ring-yellow-200">
             {current?.summary}

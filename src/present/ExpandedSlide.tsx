@@ -1,8 +1,10 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { parseFrontmatter } from "../lib/frontmatter";
+import { useFitText } from "../lib/useFitText";
 import { useMap } from "../state/store";
+import { parseAspectRatio } from "../types";
 
 interface Props {
   slideId: string;
@@ -14,16 +16,29 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
   const node = map.nodes.find((n) => n.id === slideId);
   const parsed = useMemo(() => {
     if (!node || node.type !== "slide")
-      return { slide: null, thumbnail: null, summary: null, body: "" };
+      return {
+        slide: null,
+        thumbnail: null,
+        summary: null,
+        textSize: null,
+        fixedForm: null,
+        body: "",
+      };
     return parseFrontmatter(node.markdown);
   }, [node]);
 
   if (!node || node.type !== "slide") return null;
 
-  const { slide, thumbnail, summary, body } = parsed;
+  const { slide, thumbnail, summary, fixedForm: slideFixed, body } = parsed;
   const fullscreen = map.settings.clickBehavior === "fullscreen";
   const showSummary = map.settings.showSummaryInPresent && !!summary;
   const summaryAtTop = map.settings.summaryPosition === "top";
+  const effectiveFixed = slideFixed ?? map.settings.fixedForm;
+  const aspect = effectiveFixed
+    ? parseAspectRatio(map.settings.aspectRatio) ?? 16 / 9
+    : null;
+  const fitRef = useRef<HTMLDivElement>(null);
+  useFitText(fitRef, body, effectiveFixed, 12, 96);
 
   return (
     <div
@@ -60,9 +75,30 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
             {summary}
           </div>
         )}
-        <div className="markdown-body flex-1 overflow-auto p-8 text-base leading-relaxed">
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
-        </div>
+        {effectiveFixed ? (
+          // Fast form: bevarer slide-aspect-ratio og auto-fitter teksten.
+          <div className="flex flex-1 items-center justify-center p-6">
+            <div
+              className="mx-auto w-full overflow-hidden rounded border border-neutral-200 bg-white"
+              style={{
+                aspectRatio: String(aspect),
+                maxHeight: "100%",
+                maxWidth: "100%",
+              }}
+            >
+              <div
+                ref={fitRef}
+                className="markdown-body h-full w-full overflow-hidden p-8 leading-snug"
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="markdown-body flex-1 overflow-auto p-8 text-base leading-relaxed">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+          </div>
+        )}
         {showSummary && !summaryAtTop && (
           <div className="border-t border-yellow-200 bg-yellow-50 px-6 py-2 text-sm italic text-neutral-700">
             {summary}
