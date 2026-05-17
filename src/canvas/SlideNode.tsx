@@ -42,15 +42,14 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
     return () => ro.disconnect();
   }, [body]);
 
-  // Regelen:
-  // - I editor (kart-modus): vis summary kun når innholdet overflower.
-  // - I presentasjonsmodus: vis summary iff settings sier ja, uavhengig av overflow.
-  const showSummary =
-    !!summary &&
-    !showThumbnail &&
-    (inPresent ? settings.showSummaryInPresent : overflowing);
-
-  const summaryAtTop = settings.summaryPosition === "top";
+  // På kartet (editor + utforsk-modus uvalgt slide) vises summary som en
+  // italic linje rett over body når innholdet ikke får plass. Settings-
+  // togglene og posisjon-valget gjelder kun ekspandert visning og
+  // presenter-modus — ikke selve kart-rutene.
+  const showSummary = !!summary && !showThumbnail && overflowing;
+  // inPresent fortsatt importert for fremtidig bruk, men slå-av-funksjonen
+  // for kart-rutene er ikke ønsket av brukeren.
+  void inPresent;
 
   return (
     <div
@@ -78,17 +77,21 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
         </div>
       )}
 
-      {/* Full markdown */}
+      {/* Full markdown — summary settes inn som en italic linje rett over body. */}
       <div
         ref={contentRef}
         className="markdown-body absolute inset-0 overflow-hidden p-3 pt-6 text-sm leading-snug transition-opacity duration-200"
-        style={{
-          opacity: showThumbnail ? 0 : 1,
-          paddingTop: showSummary && summaryAtTop ? "2rem" : undefined,
-          paddingBottom: showSummary && !summaryAtTop ? "2rem" : undefined,
-        }}
+        style={{ opacity: showThumbnail ? 0 : 1 }}
         aria-hidden={showThumbnail}
       >
+        {showSummary && summary && (
+          <p
+            className="mb-1 italic text-neutral-600"
+            title={summary}
+          >
+            {summary}
+          </p>
+        )}
         <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
       </div>
 
@@ -102,19 +105,6 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
           {thumbnail ?? (slide !== null ? `Slide ${slide}` : "Slide")}
         </span>
       </div>
-
-      {/* Summary-overlay */}
-      {showSummary && summary && (
-        <div
-          className={
-            "pointer-events-none absolute left-0 right-0 z-10 truncate border-neutral-200 bg-yellow-50/95 px-3 py-1 text-xs italic text-neutral-700 " +
-            (summaryAtTop ? "top-6 border-b" : "bottom-0 border-t")
-          }
-          title={summary}
-        >
-          {summary}
-        </div>
-      )}
 
       <Handle type="source" position={Position.Bottom} className="!bg-neutral-400" />
     </div>
