@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useTool } from "../hooks/useTool";
 import { ExploreView } from "./ExploreView";
 import { ExpandedSlide } from "./ExpandedSlide";
+import { PresenterView } from "./PresenterView";
 
 export function PresentMode() {
   const { presentMode, closePresent, setPresentMode } = useTool();
@@ -65,11 +66,7 @@ export function PresentMode() {
         {presentMode === "explore" && (
           <ExploreView onSlideClick={(id) => setExpandedSlide(id)} />
         )}
-        {presentMode === "presenter" && (
-          <div className="flex h-full w-full items-center justify-center text-neutral-400">
-            Presenter-modus kommer i Steg 11.
-          </div>
-        )}
+        {presentMode === "presenter" && <PresenterView />}
       </div>
 
       {expandedSlide && (
