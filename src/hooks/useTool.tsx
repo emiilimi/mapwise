@@ -27,6 +27,9 @@ interface ToolContextValue {
   openPresent: (mode?: PresentMode) => void;
   setPresentMode: (m: PresentMode) => void;
   closePresent: () => void;
+  showExport: boolean;
+  openExport: () => void;
+  closeExport: () => void;
 }
 
 const ToolContext = createContext<ToolContextValue | null>(null);
@@ -37,6 +40,7 @@ export function ToolProvider({ children }: { children: ReactNode }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [presentMode, setPresentMode] = useState<PresentMode>("off");
+  const [showExport, setShowExport] = useState(false);
 
   const toggleShortcuts = useCallback(() => setShowShortcuts((v) => !v), []);
   const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
@@ -49,6 +53,8 @@ export function ToolProvider({ children }: { children: ReactNode }) {
     [],
   );
   const closePresent = useCallback(() => setPresentMode("off"), []);
+  const openExport = useCallback(() => setShowExport(true), []);
+  const closeExport = useCallback(() => setShowExport(false), []);
 
   const value = useMemo<ToolContextValue>(
     () => ({
@@ -67,6 +73,9 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       openPresent,
       setPresentMode,
       closePresent,
+      showExport,
+      openExport,
+      closeExport,
     }),
     [
       tool,
@@ -82,6 +91,9 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       presentMode,
       openPresent,
       closePresent,
+      showExport,
+      openExport,
+      closeExport,
     ],
   );
 

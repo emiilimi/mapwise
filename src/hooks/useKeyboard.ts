@@ -30,6 +30,8 @@ export function useKeyboard() {
     closeSettings,
     presentMode,
     closePresent,
+    showExport,
+    closeExport,
   } = useTool();
 
   useEffect(() => {
@@ -43,6 +45,10 @@ export function useKeyboard() {
         }
         if (showSettings) {
           closeSettings();
+          return;
+        }
+        if (showExport) {
+          closeExport();
           return;
         }
         if (presentMode !== "off") {
@@ -93,5 +99,7 @@ export function useKeyboard() {
     closeSettings,
     presentMode,
     closePresent,
+    showExport,
+    closeExport,
   ]);
 }

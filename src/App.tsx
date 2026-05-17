@@ -7,6 +7,7 @@ import { Toolbar } from "./toolbar/Toolbar";
 import { ShortcutsHelp } from "./modals/ShortcutsHelp";
 import { NodeEditor } from "./modals/NodeEditor";
 import { SettingsPanel } from "./modals/SettingsPanel";
+import { ExportDialog } from "./modals/ExportDialog";
 import { PresentMode } from "./present/PresentMode";
 import { useTool } from "./hooks/useTool";
 import { newId } from "./lib/id";
@@ -65,16 +66,21 @@ function useSeed() {
 function Shell() {
   useSeed();
   useKeyboard();
-  const { openSettings, openPresent } = useTool();
+  const { openSettings, openPresent, openExport } = useTool();
   return (
     <div className="flex h-screen w-screen flex-col">
-      <Toolbar onOpenSettings={openSettings} onPresent={() => openPresent("explore")} />
+      <Toolbar
+        onOpenSettings={openSettings}
+        onPresent={() => openPresent("explore")}
+        onExport={openExport}
+      />
       <div className="flex-1">
         <Canvas />
       </div>
       <ShortcutsHelp />
       <NodeEditor />
       <SettingsPanel />
+      <ExportDialog />
       <PresentMode />
     </div>
   );

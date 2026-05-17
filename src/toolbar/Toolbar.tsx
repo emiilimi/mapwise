@@ -5,11 +5,12 @@ import { ToolButton } from "./ToolButton";
 interface Props {
   onOpenSettings: () => void;
   onPresent: () => void;
+  onExport: () => void;
 }
 
 // Ikonene er tekst/Unicode for å unngå ikon-bibliotek-dep i Steg 5.
 // Kan byttes til Lucide eller lignende senere uten endring av API.
-export function Toolbar({ onOpenSettings, onPresent }: Props) {
+export function Toolbar({ onOpenSettings, onPresent, onExport }: Props) {
   const { tool, setTool, toggleShortcuts } = useTool();
   const { undo, redo, canUndo, canRedo } = useStore();
 
@@ -61,7 +62,7 @@ export function Toolbar({ onOpenSettings, onPresent }: Props) {
 
       <div className="ml-auto flex items-center gap-1">
         <ToolButton icon="▶" label="Presenter" onClick={onPresent} title="Åpne presentasjonsmodus" />
-        <ToolButton icon="⤓" label="Eksport" disabled title="Kommer i Steg 12" />
+        <ToolButton icon="⤓" label="Eksport" onClick={onExport} title="Eksporter til HTML" />
         <ToolButton icon="📂" label="Åpne" disabled title="Kommer i Steg 12" />
         <ToolButton icon="⚙" label="Innst." onClick={onOpenSettings} />
         <ToolButton icon="?" label="Hjelp" shortcut="?" onClick={toggleShortcuts} />
