@@ -20,7 +20,7 @@ import { toFlowNode as toTextFlow } from "./TextNode";
 import { nodeTypes } from "./nodeTypes";
 import { ContextMenu } from "./ContextMenu";
 import { newId } from "../lib/id";
-import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE } from "../types";
+import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE, parseAspectRatio } from "../types";
 
 function CanvasInner() {
   const map = useMap();
@@ -121,13 +121,22 @@ function CanvasInner() {
       if (tool !== "slide" && tool !== "text") return;
       const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
       if (tool === "slide") {
+        const aspect = map.settings.fixedForm
+          ? parseAspectRatio(map.settings.aspectRatio)
+          : null;
+        const size = aspect
+          ? {
+              width: DEFAULT_SLIDE_SIZE.width,
+              height: Math.round(DEFAULT_SLIDE_SIZE.width / aspect),
+            }
+          : DEFAULT_SLIDE_SIZE;
         dispatch({
           type: "ADD_NODE",
           node: {
             type: "slide",
             id: newId(),
             position: pos,
-            size: DEFAULT_SLIDE_SIZE,
+            size,
             markdown: DEFAULT_SLIDE_MARKDOWN,
           },
         });

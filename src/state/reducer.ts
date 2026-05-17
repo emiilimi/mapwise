@@ -1,6 +1,7 @@
 import {
   DEFAULT_SETTINGS,
   FILE_VERSION,
+  parseAspectRatio,
   type AnyNode,
   type Arrow,
   type MapSettings,
@@ -96,8 +97,28 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
       return { ...state, edges: state.edges.filter((e) => !ids.has(e.id)) };
     }
 
-    case "UPDATE_SETTINGS":
-      return { ...state, settings: { ...state.settings, ...action.patch } };
+    case "UPDATE_SETTINGS": {
+      const newSettings = { ...state.settings, ...action.patch };
+      // Når fixedForm slås på eller aspect-ratio endres, normaliser
+      // høyden på alle slide-noder så de matcher det nye sideforholdet.
+      // Gjøres her (ikke i en useEffect) så det er én atomær undo-frame.
+      const aspectChanged =
+        newSettings.fixedForm !== state.settings.fixedForm ||
+        newSettings.aspectRatio !== state.settings.aspectRatio;
+      let nodes = state.nodes;
+      if (newSettings.fixedForm && aspectChanged) {
+        const aspect = parseAspectRatio(newSettings.aspectRatio);
+        if (aspect !== null) {
+          nodes = state.nodes.map((n) => {
+            if (n.type !== "slide") return n;
+            const targetH = Math.max(60, Math.round(n.size.width / aspect));
+            if (n.size.height === targetH) return n;
+            return { ...n, size: { width: n.size.width, height: targetH } };
+          });
+        }
+      }
+      return { ...state, settings: newSettings, nodes };
+    }
 
     case "REPLACE_ALL":
       return {

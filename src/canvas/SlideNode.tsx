@@ -10,6 +10,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
+import { useFitText } from "../lib/useFitText";
 import { useMap } from "../state/store";
 import { parseAspectRatio } from "../types";
 import { usePresentContext } from "./PresentContext";
@@ -33,6 +34,7 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
 
   const zoom = useRfStore(zoomSelector);
   const settings = useMap().settings;
+  const fixedForm = settings.fixedForm;
   const { inPresent } = usePresentContext();
   const showThumbnail = zoom < settings.zoomThreshold;
   const aspect = settings.fixedForm
@@ -40,10 +42,15 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
     : null;
 
   // Overflow-detect på markdown-body. ResizeObserver fanger både endringer
-  // i innholdets høyde og når brukeren resizer noden.
+  // i innholdets høyde og når brukeren resizer noden. I fast form er
+  // overflow uinteressant siden auto-fit garanterer at alt får plass.
   const contentRef = useRef<HTMLDivElement>(null);
   const [overflowing, setOverflowing] = useState(false);
   useEffect(() => {
+    if (fixedForm) {
+      setOverflowing(false);
+      return;
+    }
     const el = contentRef.current;
     if (!el) return;
     const check = () => setOverflowing(el.scrollHeight > el.clientHeight + 1);
@@ -51,7 +58,11 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
     const ro = new ResizeObserver(check);
     ro.observe(el);
     return () => ro.disconnect();
-  }, [body]);
+  }, [body, fixedForm]);
+
+  // Auto-fit i fast form. Hooket setter inline font-size; vi clearer den
+  // ved disable så CSS-default fra textSize tar over.
+  useFitText(contentRef, body, fixedForm);
 
   // På kartet (editor + utforsk-modus uvalgt slide) vises summary som en
   // italic linje rett over body når innholdet ikke får plass. Settings-
@@ -101,7 +112,12 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
       <div
         ref={contentRef}
         className="markdown-body absolute inset-0 overflow-hidden p-3 pt-6 leading-snug transition-opacity duration-200"
-        style={{ opacity: showThumbnail ? 0 : 1, fontSize: `${baseFontSize}px` }}
+        style={{
+          opacity: showThumbnail ? 0 : 1,
+          // I fast form styrer useFitText fontSize via el.style direkte —
+          // unngå at React kontinuerlig setter den tilbake til textSize.
+          fontSize: fixedForm ? undefined : `${baseFontSize}px`,
+        }}
         aria-hidden={showThumbnail}
       >
         {showSummary && summary && (
