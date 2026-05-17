@@ -3,7 +3,7 @@ import type { NodeProps } from "@xyflow/react";
 import { Handle, Position, useStore as useRfStore, type Node } from "@xyflow/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { parseFrontmatter } from "../lib/frontmatter";
+import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 import { useMap } from "../state/store";
 import { usePresentContext } from "./PresentContext";
 import type { SlideNode as SlideNodeData } from "../types";
@@ -18,10 +18,11 @@ const zoomSelector = (s: { transform: [number, number, number] }) =>
   s.transform[2];
 
 function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
-  const { slide, thumbnail, summary, body } = useMemo(
+  const { slide, thumbnail, summary, textSize, body } = useMemo(
     () => parseFrontmatter(data.markdown),
     [data.markdown],
   );
+  const baseFontSize = textSize ?? DEFAULT_SLIDE_TEXT_SIZE;
 
   const zoom = useRfStore(zoomSelector);
   const settings = useMap().settings;
@@ -77,17 +78,17 @@ function SlideNodeImpl({ data, selected }: NodeProps<SlideFlowNode>) {
         </div>
       )}
 
-      {/* Full markdown — summary settes inn som en italic linje rett over body. */}
+      {/* Full markdown — summary settes inn som en italic linje rett over body.
+          Base font-size styres av `textSize:` i frontmatter (eller DEFAULT). */}
       <div
         ref={contentRef}
-        className="markdown-body absolute inset-0 overflow-hidden p-3 pt-6 text-sm leading-snug transition-opacity duration-200"
-        style={{ opacity: showThumbnail ? 0 : 1 }}
+        className="markdown-body absolute inset-0 overflow-hidden p-3 pt-6 leading-snug transition-opacity duration-200"
+        style={{ opacity: showThumbnail ? 0 : 1, fontSize: `${baseFontSize}px` }}
         aria-hidden={showThumbnail}
       >
         {showSummary && summary && (
           <p
             className="mb-1 italic leading-tight text-neutral-600"
-            style={{ fontSize: "0.5em" }}
             title={summary}
           >
             {summary}

@@ -122,10 +122,16 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
                 {preview.thumbnail ?? "—"}
               </span>
             </span>
-            <span>
+            <span className="mr-3">
               summary:{" "}
               <span className={preview.summary === null ? "text-neutral-400" : "text-neutral-900"}>
                 {preview.summary ?? "—"}
+              </span>
+            </span>
+            <span>
+              textSize:{" "}
+              <span className={preview.textSize === null ? "text-neutral-400" : "text-neutral-900"}>
+                {preview.textSize ?? "—"}
               </span>
             </span>
           </div>

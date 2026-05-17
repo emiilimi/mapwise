@@ -4,8 +4,14 @@ export interface ParsedFrontmatter {
   slide: number | null;
   thumbnail: string | null;
   summary: string | null;
+  textSize: number | null;
   body: string;
 }
+
+// Default font-size (i px) for slide-bokser på kartet. Ca halvparten av
+// tidligere 14 px. Brukeren kan overstyre per slide via `textSize:` i
+// frontmatter.
+export const DEFAULT_SLIDE_TEXT_SIZE = 7;
 
 // Vi bruker js-yaml direkte i stedet for gray-matter. gray-matter bundler
 // inn flere Node-spesifikke avhengigheter (kind-of m.fl.) som "fungerer"
@@ -23,7 +29,13 @@ const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 export function parseFrontmatter(markdown: string): ParsedFrontmatter {
   const match = FRONTMATTER_RE.exec(markdown);
   if (!match) {
-    return { slide: null, thumbnail: null, summary: null, body: markdown };
+    return {
+      slide: null,
+      thumbnail: null,
+      summary: null,
+      textSize: null,
+      body: markdown,
+    };
   }
 
   let data: Record<string, unknown> = {};
@@ -34,7 +46,13 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
     }
   } catch {
     // Ugyldig YAML: la som om frontmatter ikke finnes — vis hele teksten som body.
-    return { slide: null, thumbnail: null, summary: null, body: markdown };
+    return {
+      slide: null,
+      thumbnail: null,
+      summary: null,
+      textSize: null,
+      body: markdown,
+    };
   }
 
   const body = markdown.slice(match[0].length);
@@ -65,5 +83,16 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
         ? String(rawSummary)
         : null;
 
-  return { slide, thumbnail, summary, body };
+  const rawTextSize = data.textSize;
+  const textSize =
+    typeof rawTextSize === "number" && Number.isFinite(rawTextSize) && rawTextSize > 0
+      ? rawTextSize
+      : typeof rawTextSize === "string" &&
+          rawTextSize.trim() !== "" &&
+          !Number.isNaN(Number(rawTextSize)) &&
+          Number(rawTextSize) > 0
+        ? Number(rawTextSize)
+        : null;
+
+  return { slide, thumbnail, summary, textSize, body };
 }
