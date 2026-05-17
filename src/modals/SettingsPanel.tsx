@@ -90,6 +90,70 @@ export function SettingsPanel() {
               </code>
             </div>
           </Field>
+
+          <div className="border-t border-neutral-100 pt-4">
+            <div className="mb-1 font-medium text-neutral-800">
+              Oppsummering
+            </div>
+            <p className="mb-3 text-xs text-neutral-500">
+              Slide-bokser kan ha en <code>summary:</code>-linje i frontmatter.
+              På kartet vises den alltid hvis innholdet ikke får plass.
+              I presentasjonsmodus er den skjult som default.
+            </p>
+            <label className="mb-2 flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={settings.showSummaryInPresent}
+                onChange={(e) =>
+                  dispatch({
+                    type: "UPDATE_SETTINGS",
+                    patch: { showSummaryInPresent: e.target.checked },
+                  })
+                }
+              />
+              <span>Vis oppsummering i presentasjonsmodus</span>
+            </label>
+            <div
+              className={
+                "ml-6 flex items-center gap-3 text-xs " +
+                (settings.showSummaryInPresent
+                  ? "text-neutral-700"
+                  : "text-neutral-400")
+              }
+            >
+              <span>Plassering:</span>
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="summary-pos"
+                  checked={settings.summaryPosition === "top"}
+                  disabled={!settings.showSummaryInPresent}
+                  onChange={() =>
+                    dispatch({
+                      type: "UPDATE_SETTINGS",
+                      patch: { summaryPosition: "top" },
+                    })
+                  }
+                />
+                Øverst
+              </label>
+              <label className="flex items-center gap-1">
+                <input
+                  type="radio"
+                  name="summary-pos"
+                  checked={settings.summaryPosition === "bottom"}
+                  disabled={!settings.showSummaryInPresent}
+                  onChange={() =>
+                    dispatch({
+                      type: "UPDATE_SETTINGS",
+                      patch: { summaryPosition: "bottom" },
+                    })
+                  }
+                />
+                Nederst
+              </label>
+            </div>
+          </div>
         </div>
       </div>
     </div>

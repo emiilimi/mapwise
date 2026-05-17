@@ -35,6 +35,11 @@ export interface MapSettings {
   zoomThreshold: number;
   clickBehavior: "expand" | "fullscreen";
   canvasBackground: string;
+  // Oppsummering vises alltid på kartet når innholdet ikke får plass. I
+  // presentasjons-modusene (utforsk + presenter) er den skjult som default,
+  // men kan slås på her.
+  showSummaryInPresent: boolean;
+  summaryPosition: "top" | "bottom";
 }
 
 export const FILE_VERSION = "0.1.0";
@@ -43,6 +48,8 @@ export const DEFAULT_SETTINGS: MapSettings = {
   zoomThreshold: 0.5,
   clickBehavior: "expand",
   canvasBackground: "#f5f5f5",
+  showSummaryInPresent: false,
+  summaryPosition: "bottom",
 };
 
 export const DEFAULT_SLIDE_SIZE = { width: 320, height: 200 };

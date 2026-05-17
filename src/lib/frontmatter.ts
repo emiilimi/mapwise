@@ -3,6 +3,7 @@ import yaml from "js-yaml";
 export interface ParsedFrontmatter {
   slide: number | null;
   thumbnail: string | null;
+  summary: string | null;
   body: string;
 }
 
@@ -22,7 +23,7 @@ const FRONTMATTER_RE = /^---\r?\n([\s\S]*?)\r?\n---\r?\n?/;
 export function parseFrontmatter(markdown: string): ParsedFrontmatter {
   const match = FRONTMATTER_RE.exec(markdown);
   if (!match) {
-    return { slide: null, thumbnail: null, body: markdown };
+    return { slide: null, thumbnail: null, summary: null, body: markdown };
   }
 
   let data: Record<string, unknown> = {};
@@ -33,7 +34,7 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
     }
   } catch {
     // Ugyldig YAML: la som om frontmatter ikke finnes — vis hele teksten som body.
-    return { slide: null, thumbnail: null, body: markdown };
+    return { slide: null, thumbnail: null, summary: null, body: markdown };
   }
 
   const body = markdown.slice(match[0].length);
@@ -56,5 +57,13 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
         ? String(rawThumb)
         : null;
 
-  return { slide, thumbnail, body };
+  const rawSummary = data.summary;
+  const summary =
+    typeof rawSummary === "string" && rawSummary.trim() !== ""
+      ? rawSummary
+      : typeof rawSummary === "number"
+        ? String(rawSummary)
+        : null;
+
+  return { slide, thumbnail, summary, body };
 }

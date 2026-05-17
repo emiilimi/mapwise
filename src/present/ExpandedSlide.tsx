@@ -12,15 +12,18 @@ interface Props {
 export function ExpandedSlide({ slideId, onClose }: Props) {
   const map = useMap();
   const node = map.nodes.find((n) => n.id === slideId);
-  const { slide, thumbnail, body } = useMemo(() => {
+  const parsed = useMemo(() => {
     if (!node || node.type !== "slide")
-      return { slide: null, thumbnail: null, body: "" };
+      return { slide: null, thumbnail: null, summary: null, body: "" };
     return parseFrontmatter(node.markdown);
   }, [node]);
 
   if (!node || node.type !== "slide") return null;
 
+  const { slide, thumbnail, summary, body } = parsed;
   const fullscreen = map.settings.clickBehavior === "fullscreen";
+  const showSummary = map.settings.showSummaryInPresent && !!summary;
+  const summaryAtTop = map.settings.summaryPosition === "top";
 
   return (
     <div
@@ -52,9 +55,19 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
             ✕
           </button>
         </div>
+        {showSummary && summaryAtTop && (
+          <div className="border-b border-yellow-200 bg-yellow-50 px-6 py-2 text-sm italic text-neutral-700">
+            {summary}
+          </div>
+        )}
         <div className="markdown-body flex-1 overflow-auto p-8 text-base leading-relaxed">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
         </div>
+        {showSummary && !summaryAtTop && (
+          <div className="border-t border-yellow-200 bg-yellow-50 px-6 py-2 text-sm italic text-neutral-700">
+            {summary}
+          </div>
+        )}
       </div>
     </div>
   );

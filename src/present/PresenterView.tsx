@@ -18,6 +18,9 @@ export function PresenterView() {
   const [step, setStep] = useState(0);
 
   const current = slides[idx] ?? null;
+  const showSummary =
+    map.settings.showSummaryInPresent && !!current?.summary;
+  const summaryAtTop = map.settings.summaryPosition === "top";
   const segments = useMemo(
     () => (current ? splitSteps(current.body) : [""]),
     [current],
@@ -77,23 +80,35 @@ export function PresenterView() {
       {/* En slide vises av gangen, sentrert. Bytter via key= så fade-in kjøres. */}
       <div
         key={idx}
-        className="animate-fade absolute inset-0 flex items-center justify-center p-12"
+        className="animate-fade absolute inset-0 flex flex-col p-12"
       >
-        <div className="markdown-body max-w-4xl text-lg leading-relaxed">
-          {segments.map((seg, i) => (
-            <div
-              key={i}
-              className="transition-opacity duration-300"
-              style={{
-                opacity: i <= step ? 1 : 0,
-                pointerEvents: i <= step ? "auto" : "none",
-              }}
-              aria-hidden={i > step}
-            >
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg}</ReactMarkdown>
-            </div>
-          ))}
+        {showSummary && summaryAtTop && (
+          <div className="mx-auto mb-6 max-w-4xl rounded bg-yellow-50 px-4 py-2 text-sm italic text-neutral-700 ring-1 ring-yellow-200">
+            {current?.summary}
+          </div>
+        )}
+        <div className="flex flex-1 items-center justify-center">
+          <div className="markdown-body max-w-4xl text-lg leading-relaxed">
+            {segments.map((seg, i) => (
+              <div
+                key={i}
+                className="transition-opacity duration-300"
+                style={{
+                  opacity: i <= step ? 1 : 0,
+                  pointerEvents: i <= step ? "auto" : "none",
+                }}
+                aria-hidden={i > step}
+              >
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg}</ReactMarkdown>
+              </div>
+            ))}
+          </div>
         </div>
+        {showSummary && !summaryAtTop && (
+          <div className="mx-auto mt-6 max-w-4xl rounded bg-yellow-50 px-4 py-2 text-sm italic text-neutral-700 ring-1 ring-yellow-200">
+            {current?.summary}
+          </div>
+        )}
       </div>
 
       {/* HUD nede til høyre */}

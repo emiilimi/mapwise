@@ -12,6 +12,7 @@ import { useMap } from "../state/store";
 import { toFlowNode as toSlideFlow } from "../canvas/SlideNode";
 import { toFlowNode as toTextFlow } from "../canvas/TextNode";
 import { nodeTypes } from "../canvas/nodeTypes";
+import { PresentContext } from "../canvas/PresentContext";
 
 interface Props {
   onSlideClick: (id: string) => void;
@@ -68,8 +69,10 @@ function ExploreInner({ onSlideClick }: Props) {
 
 export function ExploreView(props: Props) {
   return (
-    <ReactFlowProvider>
-      <ExploreInner {...props} />
-    </ReactFlowProvider>
+    <PresentContext value={{ inPresent: true }}>
+      <ReactFlowProvider>
+        <ExploreInner {...props} />
+      </ReactFlowProvider>
+    </PresentContext>
   );
 }

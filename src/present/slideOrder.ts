@@ -6,6 +6,7 @@ export interface OrderedSlide {
   node: SlideNode;
   slide: number;
   thumbnail: string | null;
+  summary: string | null;
   body: string;
 }
 
@@ -16,9 +17,9 @@ export function getOrderedSlides(map: MapState): OrderedSlide[] {
   const out: OrderedSlide[] = [];
   for (const n of map.nodes) {
     if (n.type !== "slide") continue;
-    const { slide, thumbnail, body } = parseFrontmatter(n.markdown);
+    const { slide, thumbnail, summary, body } = parseFrontmatter(n.markdown);
     if (slide === null) continue;
-    out.push({ node: n, slide, thumbnail, body });
+    out.push({ node: n, slide, thumbnail, summary, body });
   }
   out.sort((a, b) => a.slide - b.slide);
   return out;
