@@ -7,6 +7,7 @@ import { Toolbar } from "./toolbar/Toolbar";
 import { ShortcutsHelp } from "./modals/ShortcutsHelp";
 import { NodeEditor } from "./modals/NodeEditor";
 import { SettingsPanel } from "./modals/SettingsPanel";
+import { PresentMode } from "./present/PresentMode";
 import { useTool } from "./hooks/useTool";
 import { newId } from "./lib/id";
 import { DEFAULT_SLIDE_SIZE } from "./types";
@@ -64,16 +65,17 @@ function useSeed() {
 function Shell() {
   useSeed();
   useKeyboard();
-  const { openSettings } = useTool();
+  const { openSettings, openPresent } = useTool();
   return (
     <div className="flex h-screen w-screen flex-col">
-      <Toolbar onOpenSettings={openSettings} />
+      <Toolbar onOpenSettings={openSettings} onPresent={() => openPresent("explore")} />
       <div className="flex-1">
         <Canvas />
       </div>
       <ShortcutsHelp />
       <NodeEditor />
       <SettingsPanel />
+      <PresentMode />
     </div>
   );
 }

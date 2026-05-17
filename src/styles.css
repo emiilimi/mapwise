@@ -12,3 +12,15 @@
 .markdown-body a    { color: #2563eb; text-decoration: underline; }
 .markdown-body hr   { border: none; border-top: 1px solid #e5e7eb; margin: 0.5rem 0; }
 
+/* Hover-scale på slides kun i present-modus. Indre div skaleres så React
+   Flow sin posisjons-transform på node-wrapperen ikke overskrives. */
+body[data-present] .react-flow__node-slide > div {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+body[data-present] .react-flow__node-slide:hover > div {
+  transform: scale(1.04);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+

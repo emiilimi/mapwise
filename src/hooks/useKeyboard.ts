@@ -28,6 +28,8 @@ export function useKeyboard() {
     showShortcuts,
     showSettings,
     closeSettings,
+    presentMode,
+    closePresent,
   } = useTool();
 
   useEffect(() => {
@@ -41,6 +43,10 @@ export function useKeyboard() {
         }
         if (showSettings) {
           closeSettings();
+          return;
+        }
+        if (presentMode !== "off") {
+          closePresent();
           return;
         }
         setTool("select");
@@ -85,5 +91,7 @@ export function useKeyboard() {
     showShortcuts,
     showSettings,
     closeSettings,
+    presentMode,
+    closePresent,
   ]);
 }

@@ -8,6 +8,7 @@ import {
 } from "react";
 
 export type Tool = "select" | "slide" | "text" | "arrow";
+export type PresentMode = "off" | "explore" | "presenter";
 
 interface ToolContextValue {
   tool: Tool;
@@ -22,6 +23,10 @@ interface ToolContextValue {
   showSettings: boolean;
   openSettings: () => void;
   closeSettings: () => void;
+  presentMode: PresentMode;
+  openPresent: (mode?: PresentMode) => void;
+  setPresentMode: (m: PresentMode) => void;
+  closePresent: () => void;
 }
 
 const ToolContext = createContext<ToolContextValue | null>(null);
@@ -31,6 +36,7 @@ export function ToolProvider({ children }: { children: ReactNode }) {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
+  const [presentMode, setPresentMode] = useState<PresentMode>("off");
 
   const toggleShortcuts = useCallback(() => setShowShortcuts((v) => !v), []);
   const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
@@ -38,6 +44,11 @@ export function ToolProvider({ children }: { children: ReactNode }) {
   const closeEditor = useCallback(() => setEditingId(null), []);
   const openSettings = useCallback(() => setShowSettings(true), []);
   const closeSettings = useCallback(() => setShowSettings(false), []);
+  const openPresent = useCallback(
+    (mode: PresentMode = "explore") => setPresentMode(mode),
+    [],
+  );
+  const closePresent = useCallback(() => setPresentMode("off"), []);
 
   const value = useMemo<ToolContextValue>(
     () => ({
@@ -52,6 +63,10 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       showSettings,
       openSettings,
       closeSettings,
+      presentMode,
+      openPresent,
+      setPresentMode,
+      closePresent,
     }),
     [
       tool,
@@ -64,6 +79,9 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       showSettings,
       openSettings,
       closeSettings,
+      presentMode,
+      openPresent,
+      closePresent,
     ],
   );
 
