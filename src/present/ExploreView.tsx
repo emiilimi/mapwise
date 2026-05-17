@@ -8,6 +8,9 @@ import {
   type Edge,
   type Node,
 } from "@xyflow/react";
+// Må importeres her i tillegg til Canvas, ellers mangler den i viewer-
+// bundelen (som ikke når Canvas).
+import "@xyflow/react/dist/style.css";
 import { useMap } from "../state/store";
 import { toFlowNode as toSlideFlow } from "../canvas/SlideNode";
 import { toFlowNode as toTextFlow } from "../canvas/TextNode";
