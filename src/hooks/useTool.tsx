@@ -19,6 +19,9 @@ interface ToolContextValue {
   editingId: string | null;
   openEditor: (id: string) => void;
   closeEditor: () => void;
+  showSettings: boolean;
+  openSettings: () => void;
+  closeSettings: () => void;
 }
 
 const ToolContext = createContext<ToolContextValue | null>(null);
@@ -27,11 +30,14 @@ export function ToolProvider({ children }: { children: ReactNode }) {
   const [tool, setTool] = useState<Tool>("select");
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
 
   const toggleShortcuts = useCallback(() => setShowShortcuts((v) => !v), []);
   const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
   const openEditor = useCallback((id: string) => setEditingId(id), []);
   const closeEditor = useCallback(() => setEditingId(null), []);
+  const openSettings = useCallback(() => setShowSettings(true), []);
+  const closeSettings = useCallback(() => setShowSettings(false), []);
 
   const value = useMemo<ToolContextValue>(
     () => ({
@@ -43,6 +49,9 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       editingId,
       openEditor,
       closeEditor,
+      showSettings,
+      openSettings,
+      closeSettings,
     }),
     [
       tool,
@@ -52,6 +61,9 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       editingId,
       openEditor,
       closeEditor,
+      showSettings,
+      openSettings,
+      closeSettings,
     ],
   );
 

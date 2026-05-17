@@ -6,6 +6,8 @@ import { useKeyboard } from "./hooks/useKeyboard";
 import { Toolbar } from "./toolbar/Toolbar";
 import { ShortcutsHelp } from "./modals/ShortcutsHelp";
 import { NodeEditor } from "./modals/NodeEditor";
+import { SettingsPanel } from "./modals/SettingsPanel";
+import { useTool } from "./hooks/useTool";
 import { newId } from "./lib/id";
 import { DEFAULT_SLIDE_SIZE } from "./types";
 
@@ -53,14 +55,16 @@ function useSeed() {
 function Shell() {
   useSeed();
   useKeyboard();
+  const { openSettings } = useTool();
   return (
     <div className="flex h-screen w-screen flex-col">
-      <Toolbar onOpenSettings={() => { /* TODO Steg 9 */ }} />
+      <Toolbar onOpenSettings={openSettings} />
       <div className="flex-1">
         <Canvas />
       </div>
       <ShortcutsHelp />
       <NodeEditor />
+      <SettingsPanel />
     </div>
   );
 }

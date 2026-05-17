@@ -21,7 +21,14 @@ const TOOL_KEYS: Record<string, Tool> = {
 
 export function useKeyboard() {
   const { undo, redo } = useStore();
-  const { setTool, toggleShortcuts, closeShortcuts, showShortcuts } = useTool();
+  const {
+    setTool,
+    toggleShortcuts,
+    closeShortcuts,
+    showShortcuts,
+    showSettings,
+    closeSettings,
+  } = useTool();
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -30,6 +37,10 @@ export function useKeyboard() {
       if (e.key === "Escape") {
         if (showShortcuts) {
           closeShortcuts();
+          return;
+        }
+        if (showSettings) {
+          closeSettings();
           return;
         }
         setTool("select");
@@ -65,5 +76,14 @@ export function useKeyboard() {
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [undo, redo, setTool, toggleShortcuts, closeShortcuts, showShortcuts]);
+  }, [
+    undo,
+    redo,
+    setTool,
+    toggleShortcuts,
+    closeShortcuts,
+    showShortcuts,
+    showSettings,
+    closeSettings,
+  ]);
 }
