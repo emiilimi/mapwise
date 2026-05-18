@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from "react";
 
-export type Tool = "select" | "slide" | "text" | "arrow";
+export type Tool = "select" | "slide" | "text" | "arrow" | "image";
 export type PresentMode = "off" | "explore" | "presenter";
 
 interface ToolContextValue {

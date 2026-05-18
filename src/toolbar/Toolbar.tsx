@@ -64,7 +64,13 @@ export function Toolbar({
       <div className="mx-2 h-10 w-px bg-neutral-200" />
 
       <ToolButton icon="🔗" label="Lenke" shortcut="L" disabled title="Kommer snart" />
-      <ToolButton icon="🖼" label="Bilde" shortcut="B" disabled title="Kommer snart" />
+      <ToolButton
+        icon="🖼"
+        label="Bilde"
+        shortcut="B"
+        active={tool === "image"}
+        onClick={() => setTool("image")}
+      />
 
       <div className="ml-auto flex items-center gap-1">
         <ToolButton icon="▶" label="Presenter" onClick={onPresent} title="Åpne presentasjonsmodus" />

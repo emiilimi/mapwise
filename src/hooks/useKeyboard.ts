@@ -17,6 +17,7 @@ const TOOL_KEYS: Record<string, Tool> = {
   s: "slide",
   t: "text",
   p: "arrow",
+  b: "image",
 };
 
 export function useKeyboard() {

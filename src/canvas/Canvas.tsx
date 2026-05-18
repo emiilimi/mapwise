@@ -17,10 +17,12 @@ import { useMap, useStore } from "../state/store";
 import { useTool } from "../hooks/useTool";
 import { toFlowNode as toSlideFlow } from "./SlideNode";
 import { toFlowNode as toTextFlow } from "./TextNode";
+import { toFlowNode as toImageFlow } from "./ImageNode";
 import { nodeTypes } from "./nodeTypes";
+import { ImageDialog } from "../modals/ImageDialog";
 import { ContextMenu } from "./ContextMenu";
 import { newId } from "../lib/id";
-import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE, parseAspectRatio } from "../types";
+import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE, parseAspectRatio, type ImageNode } from "../types";
 
 function CanvasInner() {
   const map = useMap();
@@ -34,6 +36,9 @@ function CanvasInner() {
   const [menu, setMenu] = useState<{ x: number; y: number; id: string } | null>(
     null,
   );
+  // Bildemodus: ventende posisjon for ny bildenode (dialog åpen), og id for redigering.
+  const [pendingImagePos, setPendingImagePos] = useState<{ x: number; y: number } | null>(null);
+  const [editingImageId, setEditingImageId] = useState<string | null>(null);
 
   // Reset av pil-state når brukeren bytter verktøy.
   useEffect(() => {
@@ -43,7 +48,12 @@ function CanvasInner() {
   const nodes = useMemo<Node[]>(
     () =>
       map.nodes.map((n) => {
-        const flow = n.type === "slide" ? toSlideFlow(n) : toTextFlow(n);
+        const flow =
+          n.type === "slide"
+            ? toSlideFlow(n)
+            : n.type === "image"
+              ? toImageFlow(n)
+              : toTextFlow(n);
         if (n.id === arrowSource) {
           return { ...flow, className: "ring-2 ring-blue-500 ring-offset-2" };
         }
@@ -118,8 +128,12 @@ function CanvasInner() {
         setArrowSource(null);
         return;
       }
-      if (tool !== "slide" && tool !== "text") return;
+      if (tool !== "slide" && tool !== "text" && tool !== "image") return;
       const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      if (tool === "image") {
+        setPendingImagePos(pos);
+        return;
+      }
       if (tool === "slide") {
         const aspect = map.settings.fixedForm
           ? parseAspectRatio(map.settings.aspectRatio)
@@ -198,7 +212,7 @@ function CanvasInner() {
     }
   }
 
-  const placementMode = tool === "slide" || tool === "text";
+  const placementMode = tool === "slide" || tool === "text" || tool === "image";
   const cursor = placementMode || tool === "arrow" ? "crosshair" : undefined;
 
   return (
@@ -215,7 +229,10 @@ function CanvasInner() {
         onConnect={onConnect}
         onPaneClick={onPaneClick}
         onNodeClick={onNodeClick}
-        onNodeDoubleClick={(_, n) => openEditor(n.id)}
+        onNodeDoubleClick={(_, n) => {
+          if (n.type === "image") setEditingImageId(n.id);
+          else openEditor(n.id);
+        }}
         onNodeContextMenu={onNodeContextMenu}
         deleteKeyCode={["Delete", "Backspace"]}
         fitView
@@ -248,6 +265,52 @@ function CanvasInner() {
           ]}
         />
       )}
+
+      {pendingImagePos && (
+        <ImageDialog
+          onConfirm={({ src, alt }) => {
+            dispatch({
+              type: "ADD_NODE",
+              node: {
+                type: "image",
+                id: newId(),
+                position: pendingImagePos,
+                size: { width: 320, height: 200 },
+                src,
+                alt: alt || undefined,
+              } satisfies ImageNode,
+            });
+            setPendingImagePos(null);
+            setTool("select");
+          }}
+          onClose={() => {
+            setPendingImagePos(null);
+            setTool("select");
+          }}
+        />
+      )}
+
+      {editingImageId && (() => {
+        const imgNode = map.nodes.find(
+          (n) => n.id === editingImageId && n.type === "image",
+        );
+        if (!imgNode || imgNode.type !== "image") return null;
+        return (
+          <ImageDialog
+            defaultSrc={imgNode.src}
+            defaultAlt={imgNode.alt}
+            onConfirm={({ src, alt }) => {
+              dispatch({
+                type: "UPDATE_NODE",
+                id: editingImageId,
+                patch: { src, alt: alt || undefined },
+              });
+              setEditingImageId(null);
+            }}
+            onClose={() => setEditingImageId(null)}
+          />
+        );
+      })()}
     </div>
   );
 }

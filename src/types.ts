@@ -8,7 +8,16 @@ export interface MapShowFile {
   edges: Arrow[];
 }
 
-export type AnyNode = SlideNode | TextNode;
+export interface ImageNode {
+  type: "image";
+  id: string;
+  position: { x: number; y: number };
+  size: { width: number; height: number };
+  src: string;
+  alt?: string;
+}
+
+export type AnyNode = SlideNode | TextNode | ImageNode;
 
 export interface SlideNode {
   type: "slide";
