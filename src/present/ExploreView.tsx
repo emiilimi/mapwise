@@ -14,6 +14,7 @@ import "@xyflow/react/dist/style.css";
 import { useMap } from "../state/store";
 import { toFlowNode as toSlideFlow } from "../canvas/SlideNode";
 import { toFlowNode as toTextFlow } from "../canvas/TextNode";
+import { toFlowNode as toImageFlow } from "../canvas/ImageNode";
 import { nodeTypes } from "../canvas/nodeTypes";
 import { PresentContext } from "../canvas/PresentContext";
 
@@ -28,7 +29,11 @@ function ExploreInner({ onSlideClick }: Props) {
   const nodes = useMemo<Node[]>(
     () =>
       map.nodes.map((n) =>
-        n.type === "slide" ? toSlideFlow(n) : toTextFlow(n),
+        n.type === "slide"
+          ? toSlideFlow(n)
+          : n.type === "image"
+            ? toImageFlow(n)
+            : toTextFlow(n),
       ),
     [map.nodes],
   );

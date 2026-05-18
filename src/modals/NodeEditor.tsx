@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTool } from "../hooks/useTool";
 import { useMap, useStore } from "../state/store";
 import { parseFrontmatter } from "../lib/frontmatter";
-import type { SlideNode, TextNode } from "../types";
+import type { SlideNode, TextNode, AnyNode } from "../types";
 
 export function NodeEditor() {
   const { editingId, closeEditor } = useTool();
@@ -14,11 +14,12 @@ export function NodeEditor() {
     [map.nodes, editingId],
   );
 
-  if (!node || !editingId) return null;
+  // ImageNode redigeres via ImageDialog i Canvas — ikke her.
+  if (!node || !editingId || node.type === "image") return null;
   return (
     <EditorImpl
       key={editingId}
-      node={node}
+      node={node as AnyNode & (SlideNode | TextNode)}
       onClose={closeEditor}
       onSave={(patch) => {
         dispatch({ type: "UPDATE_NODE", id: editingId, patch });
