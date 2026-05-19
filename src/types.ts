@@ -83,6 +83,7 @@ export function parseAspectRatio(s: string): number | null {
 }
 
 export const DEFAULT_SLIDE_SIZE = { width: 320, height: 200 };
+export const DEFAULT_TEXT_SIZE  = { width: 220, height: 120 };
 
 export const DEFAULT_SLIDE_MARKDOWN = `---
 slide: 1

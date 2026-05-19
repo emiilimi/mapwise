@@ -1,7 +1,11 @@
 import { memo } from "react";
 import type { NodeProps } from "@xyflow/react";
-import { Handle, Position, type Node } from "@xyflow/react";
+import { Handle, NodeResizer, Position, type Node } from "@xyflow/react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import type { TextNode as TextNodeData } from "../types";
+import { DEFAULT_TEXT_SIZE } from "../types";
+import { markdownComponents } from "../lib/markdownComponents";
 
 export type TextFlowNode = Node<{ content: string }, "text">;
 
@@ -9,15 +13,26 @@ function TextNodeImpl({ data, selected }: NodeProps<TextFlowNode>) {
   return (
     <div
       className={
-        "min-w-[80px] max-w-[280px] whitespace-pre-wrap rounded px-2 py-1 text-sm transition-colors " +
+        "relative h-full w-full overflow-hidden rounded-lg border bg-yellow-50 shadow-sm transition-shadow " +
         (selected
-          ? "bg-blue-50 text-blue-900 ring-1 ring-blue-300"
-          : "bg-neutral-100/60 text-neutral-700 hover:bg-neutral-100")
+          ? "border-blue-500 shadow-md"
+          : "border-yellow-200 hover:shadow")
       }
     >
-      <Handle type="target" position={Position.Top} className="!opacity-0" />
-      {data.content}
-      <Handle type="source" position={Position.Bottom} className="!opacity-0" />
+      <NodeResizer
+        minWidth={100}
+        minHeight={60}
+        isVisible={selected}
+        lineClassName="!border-blue-400"
+        handleClassName="!bg-blue-500 !border-white"
+      />
+      <Handle type="target" position={Position.Top} className="!bg-neutral-400" />
+      <div className="markdown-body h-full w-full overflow-hidden p-3 text-sm leading-snug">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+          {data.content}
+        </ReactMarkdown>
+      </div>
+      <Handle type="source" position={Position.Bottom} className="!bg-neutral-400" />
     </div>
   );
 }
@@ -25,11 +40,13 @@ function TextNodeImpl({ data, selected }: NodeProps<TextFlowNode>) {
 export const TextNode = memo(TextNodeImpl);
 
 export function toFlowNode(n: TextNodeData) {
+  const size = n.size ?? DEFAULT_TEXT_SIZE;
   return {
     id: n.id,
     type: "text" as const,
     position: n.position,
     data: { content: n.content },
-    ...(n.size ? { width: n.size.width, height: n.size.height } : {}),
+    width: size.width,
+    height: size.height,
   };
 }

@@ -69,7 +69,7 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
         ...state,
         nodes: state.nodes.map((n) => {
           if (n.id !== action.id) return n;
-          if (n.type !== "slide" && n.type !== "image") return n;
+          if (n.type !== "slide" && n.type !== "image" && n.type !== "text") return n;
           return { ...n, size: action.size };
         }),
       };

@@ -22,7 +22,7 @@ import { nodeTypes } from "./nodeTypes";
 import { ImageDialog } from "../modals/ImageDialog";
 import { ContextMenu } from "./ContextMenu";
 import { newId } from "../lib/id";
-import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE, parseAspectRatio, type ImageNode } from "../types";
+import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE, DEFAULT_TEXT_SIZE, parseAspectRatio, type ImageNode } from "../types";
 
 function CanvasInner() {
   const map = useMap();
@@ -170,6 +170,7 @@ function CanvasInner() {
             type: "text",
             id: newId(),
             position: pos,
+            size: DEFAULT_TEXT_SIZE,
             content: "Nytt notat",
           },
         });
