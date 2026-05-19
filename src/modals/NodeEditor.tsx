@@ -40,6 +40,7 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
   const [text, setText] = useState(initialText);
   const dirty = text !== initialText;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const pendingCursor = useRef<number | null>(null);
 
   // Fokus textarea ved åpning og plasser markør på slutten.
   useEffect(() => {
@@ -49,6 +50,17 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
     ta.selectionStart = ta.value.length;
     ta.selectionEnd = ta.value.length;
   }, []);
+
+  // Sett cursor til pendingCursor etter React har oppdatert textarea-verdien.
+  useEffect(() => {
+    if (pendingCursor.current === null) return;
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const pos = pendingCursor.current;
+    pendingCursor.current = null;
+    ta.selectionStart = pos;
+    ta.selectionEnd = pos;
+  }, [text]);
 
   // Live frontmatter-preview — viser hva parseren faktisk leser ut.
   const preview = useMemo(() => {
@@ -70,6 +82,22 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "s") {
       e.preventDefault();
       save();
+    } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      const ta = textareaRef.current;
+      if (!ta) return;
+      const start = ta.selectionStart ?? 0;
+      const end = ta.selectionEnd ?? 0;
+      const selected = text.slice(start, end);
+      if (selected) {
+        // Wrap: [selected text]() — cursor plasseres etter "("
+        setText(text.slice(0, start) + `[${selected}]()` + text.slice(end));
+        pendingCursor.current = start + selected.length + 3;
+      } else {
+        // Tomt: []() — cursor plasseres mellom "[" og "]"
+        setText(text.slice(0, start) + `[]()` + text.slice(start));
+        pendingCursor.current = start + 1;
+      }
     } else if (e.key === "Escape") {
       e.preventDefault();
       tryClose();
