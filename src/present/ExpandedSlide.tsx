@@ -2,6 +2,7 @@ import { useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { parseFrontmatter } from "../lib/frontmatter";
+import { markdownComponents } from "../lib/markdownComponents";
 import { useFitText } from "../lib/useFitText";
 import { useMap } from "../state/store";
 import { parseAspectRatio } from "../types";
@@ -90,13 +91,13 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
                 ref={fitRef}
                 className="markdown-body h-full w-full overflow-hidden p-8 leading-snug"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{body}</ReactMarkdown>
               </div>
             </div>
           </div>
         ) : (
           <div className="markdown-body flex-1 overflow-auto p-8 text-base leading-relaxed">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{body}</ReactMarkdown>
           </div>
         )}
         {showSummary && !summaryAtTop && (

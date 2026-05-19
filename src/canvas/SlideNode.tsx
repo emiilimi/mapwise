@@ -11,6 +11,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 import { useFitText } from "../lib/useFitText";
+import { markdownComponents } from "../lib/markdownComponents";
 import { useMap, useStore } from "../state/store";
 import { parseAspectRatio } from "../types";
 import { usePresentContext } from "./PresentContext";
@@ -162,7 +163,7 @@ function SlideNodeImpl({
             {summary}
           </p>
         )}
-        <ReactMarkdown remarkPlugins={[remarkGfm]}>{body}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{body}</ReactMarkdown>
       </div>
 
       {/* Thumbnail-overlay */}

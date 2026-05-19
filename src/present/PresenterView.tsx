@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { parseFrontmatter } from "../lib/frontmatter";
+import { markdownComponents } from "../lib/markdownComponents";
 import { useFitText } from "../lib/useFitText";
 import { useMap } from "../state/store";
 import { useTool } from "../hooks/useTool";
@@ -128,7 +129,7 @@ export function PresenterView() {
                     }}
                     aria-hidden={i > step}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{seg}</ReactMarkdown>
                   </div>
                 ))}
               </div>
@@ -147,7 +148,7 @@ export function PresenterView() {
                   }}
                   aria-hidden={i > step}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{seg}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{seg}</ReactMarkdown>
                 </div>
               ))}
             </div>
