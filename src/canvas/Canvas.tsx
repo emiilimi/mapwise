@@ -45,6 +45,15 @@ function CanvasInner() {
     if (tool !== "arrow" && arrowSource !== null) setArrowSource(null);
   }, [tool, arrowSource]);
 
+  // Etter import (REPLACE_ALL): gi ReactFlow én render-syklus til å prosessere
+  // nye noder, deretter fitte viewport til dem.
+  const { importedAt } = map;
+  useEffect(() => {
+    if (!importedAt) return;
+    const timer = setTimeout(() => rf.fitView({ duration: 400 }), 60);
+    return () => clearTimeout(timer);
+  }, [importedAt, rf]);
+
   const nodes = useMemo<Node[]>(
     () =>
       map.nodes.map((n) => {

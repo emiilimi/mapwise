@@ -13,6 +13,9 @@ export interface MapState {
   settings: MapSettings;
   nodes: AnyNode[];
   edges: Arrow[];
+  // Oppdateres ved REPLACE_ALL slik at Canvas kan triggre fitView.
+  // Ikke del av MapShowFile — eksporteres ikke.
+  importedAt: number;
 }
 
 export const initialMapState: MapState = {
@@ -20,6 +23,7 @@ export const initialMapState: MapState = {
   settings: DEFAULT_SETTINGS,
   nodes: [],
   edges: [],
+  importedAt: 0,
 };
 
 export type MapAction =
@@ -123,9 +127,10 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
     case "REPLACE_ALL":
       return {
         version: action.file.version,
-        settings: action.file.settings,
+        settings: { ...DEFAULT_SETTINGS, ...action.file.settings },
         nodes: action.file.nodes,
         edges: action.file.edges,
+        importedAt: Date.now(),
       };
   }
 }

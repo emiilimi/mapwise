@@ -30,5 +30,6 @@ export function toFlowNode(n: TextNodeData) {
     type: "text" as const,
     position: n.position,
     data: { content: n.content },
+    ...(n.size ? { width: n.size.width, height: n.size.height } : {}),
   };
 }

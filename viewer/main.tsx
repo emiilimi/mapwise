@@ -39,6 +39,7 @@ function loadFile(): MapState {
     settings: { ...DEFAULT_SETTINGS, ...(f.settings ?? {}) },
     nodes: Array.isArray(f.nodes) ? f.nodes : [],
     edges: Array.isArray(f.edges) ? f.edges : [],
+    importedAt: 0,
   };
 }
 
