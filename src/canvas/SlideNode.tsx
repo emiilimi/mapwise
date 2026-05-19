@@ -12,6 +12,7 @@ import remarkGfm from "remark-gfm";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 import { useFitText } from "../lib/useFitText";
 import { markdownComponents } from "../lib/markdownComponents";
+import { splitSteps } from "../present/stepSplitter";
 import { useMap, useStore } from "../state/store";
 import { parseAspectRatio } from "../types";
 import { usePresentContext } from "./PresentContext";
@@ -33,8 +34,9 @@ function SlideNodeImpl({
   width,
   height,
 }: NodeProps<SlideFlowNode>) {
-  const { slide, thumbnail, summary, textSize, fixedForm: slideFixed, body } =
+  const { slide, thumbnail, summary, textSize, fixedForm: slideFixed, body: rawBody } =
     useMemo(() => parseFrontmatter(data.markdown), [data.markdown]);
+  const body = useMemo(() => splitSteps(rawBody).join("\n\n"), [rawBody]);
   const baseFontSize = textSize ?? DEFAULT_SLIDE_TEXT_SIZE;
 
   const zoom = useRfStore(zoomSelector);

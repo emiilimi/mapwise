@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { parseFrontmatter } from "../lib/frontmatter";
 import { markdownComponents } from "../lib/markdownComponents";
 import { useFitText } from "../lib/useFitText";
+import { splitSteps } from "./stepSplitter";
 import { useMap } from "../state/store";
 import { parseAspectRatio } from "../types";
 
@@ -25,7 +26,8 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
         fixedForm: null,
         body: "",
       };
-    return parseFrontmatter(node.markdown);
+    const fm = parseFrontmatter(node.markdown);
+    return { ...fm, body: splitSteps(fm.body).join("\n\n") };
   }, [node]);
 
   if (!node || node.type !== "slide") return null;
