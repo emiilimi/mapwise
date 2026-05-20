@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTool } from "../hooks/useTool";
 import { useMap } from "../state/store";
 import { ExploreView } from "./ExploreView";
@@ -30,6 +30,40 @@ export function PresentMode({ embedded = false }: Props = {}) {
     setExpandedSlide(null);
   }, [presentMode]);
 
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    function onFsChange() {
+      setIsFullscreen(!!document.fullscreenElement);
+    }
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (
+        e.key.toLowerCase() === "f" &&
+        !e.ctrlKey &&
+        !e.metaKey &&
+        !(document.activeElement instanceof HTMLInputElement) &&
+        !(document.activeElement instanceof HTMLTextAreaElement)
+      ) {
+        toggleFullscreen();
+      }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleFullscreen]);
+
   const map = useMap();
   const ordered = useMemo(() => getOrderedSlides(map), [map]);
 
@@ -58,7 +92,7 @@ export function PresentMode({ embedded = false }: Props = {}) {
     <div className="fixed inset-0 z-[9999] bg-white">
       {/* Topplinje */}
       <div className="absolute left-0 right-0 top-0 z-10 flex items-center gap-2 border-b border-neutral-200 bg-white/90 px-4 py-2 backdrop-blur">
-        <span className="text-sm font-semibold">MapShow</span>
+        <span className="text-sm font-semibold">MapWise</span>
         <div className="ml-4 flex overflow-hidden rounded border border-neutral-300 text-xs">
           <button
             onClick={() => setPresentMode("explore")}
@@ -83,6 +117,13 @@ export function PresentMode({ embedded = false }: Props = {}) {
             Presenter
           </button>
         </div>
+        <button
+          onClick={toggleFullscreen}
+          className={`${!embedded ? "" : "ml-auto "}rounded px-2 py-1 text-sm hover:bg-neutral-100`}
+          title={isFullscreen ? "Avslutt fullskjerm (F)" : "Fullskjerm (F)"}
+        >
+          {isFullscreen ? "↙ Avslutt fullskjerm" : "↗ Fullskjerm"}
+        </button>
         {!embedded && (
           <button
             onClick={closePresent}

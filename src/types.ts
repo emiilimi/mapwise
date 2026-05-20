@@ -1,7 +1,7 @@
-// MapShow datamodell. Lagres til disk i denne formen (én fil per kart).
+// MapWise datamodell. Lagres til disk i denne formen (én fil per kart).
 // Frontmatter (slide, thumbnail) er en del av markdown-strengen — ikke et eget felt.
 
-export interface MapShowFile {
+export interface MapWiseFile {
   version: string;
   settings: MapSettings;
   nodes: AnyNode[];
@@ -15,6 +15,8 @@ export interface ImageNode {
   size: { width: number; height: number };
   src: string;
   alt?: string;
+  slide?: number;
+  thumbnail?: string;
 }
 
 export type AnyNode = SlideNode | TextNode | ImageNode;

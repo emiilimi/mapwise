@@ -12,7 +12,7 @@ if (typeof globalThis.process === "undefined") {
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { ViewerApp } from "./ViewerApp";
-import { DEFAULT_SETTINGS, FILE_VERSION, type MapShowFile } from "../src/types";
+import { DEFAULT_SETTINGS, FILE_VERSION, type MapWiseFile } from "../src/types";
 import type { MapState } from "../src/state/reducer";
 import "../src/styles.css";
 
@@ -33,7 +33,7 @@ function loadFile(): MapState {
   if (!parsed || typeof parsed !== "object") {
     throw new Error("mapshow-data er ikke et objekt");
   }
-  const f = parsed as Partial<MapShowFile>;
+  const f = parsed as Partial<MapWiseFile>;
   return {
     version: typeof f.version === "string" ? f.version : FILE_VERSION,
     settings: { ...DEFAULT_SETTINGS, ...(f.settings ?? {}) },

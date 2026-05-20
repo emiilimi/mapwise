@@ -1,13 +1,13 @@
-import { FILE_VERSION, type MapShowFile, type ImageNode } from "../types";
+import { FILE_VERSION, type MapWiseFile, type ImageNode } from "../types";
 import type { MapState } from "../state/reducer";
 
 // `</` i en JSON-streng kan ellers avslutte <script>-blokken som omkranser
 // dataen. Vi escaper det til `<\/` slik HTML-spec sier.
-function safeJson(file: MapShowFile): string {
+function safeJson(file: MapWiseFile): string {
   return JSON.stringify(file).replace(/<\//g, "<\\/");
 }
 
-function stateToFile(state: MapState): MapShowFile {
+function stateToFile(state: MapState): MapWiseFile {
   return {
     version: state.version ?? FILE_VERSION,
     settings: state.settings,
@@ -57,12 +57,12 @@ async function urlToDataUri(url: string): Promise<string | null> {
       reader.readAsDataURL(blob);
     });
   } catch (err) {
-    console.warn(`[MapShow export] Klarte ikke å inline bilde: ${url}`, err);
+    console.warn(`[MapWise export] Klarte ikke å inline bilde: ${url}`, err);
     return null;
   }
 }
 
-async function inlineImages(file: MapShowFile): Promise<MapShowFile> {
+async function inlineImages(file: MapWiseFile): Promise<MapWiseFile> {
   // Samle alle unike eksterne URL-er fra markdown og ImageNode.src.
   const urlSet = new Set<string>();
 
@@ -119,7 +119,7 @@ export async function exportSelfContained(
 <html lang="nb">
 <head>
 <meta charset="utf-8">
-<title>MapShow</title>
+<title>MapWise</title>
 <style>${BASE_STYLE}</style>
 <style>${css}</style>
 </head>
@@ -143,7 +143,7 @@ export async function exportCompact(state: MapState): Promise<ExportResult> {
 <html lang="nb">
 <head>
 <meta charset="utf-8">
-<title>MapShow</title>
+<title>MapWise</title>
 <style>${BASE_STYLE}</style>
 <link rel="stylesheet" href="mapshow-viewer.css">
 </head>

@@ -3,7 +3,10 @@ import type { NodeProps } from "@xyflow/react";
 import { Handle, NodeResizer, Position, type Node } from "@xyflow/react";
 import type { ImageNode as ImageNodeData } from "../types";
 
-export type ImageFlowNode = Node<{ src: string; alt?: string }, "image">;
+export type ImageFlowNode = Node<
+  { src: string; alt?: string; slide?: number; thumbnail?: string },
+  "image"
+>;
 
 function ImageNodeImpl({ data, selected }: NodeProps<ImageFlowNode>) {
   return (
@@ -24,6 +27,22 @@ function ImageNodeImpl({ data, selected }: NodeProps<ImageFlowNode>) {
         handleClassName="!bg-blue-500 !border-white"
       />
       <Handle type="target" position={Position.Top} className="!bg-neutral-400" />
+
+      {(data.slide != null || data.thumbnail) && (
+        <div className="pointer-events-none absolute left-2 top-2 z-10 flex items-center gap-1 text-[10px] font-medium uppercase tracking-wide">
+          {data.slide != null && (
+            <span className="rounded bg-blue-600 px-1.5 py-0.5 text-white">
+              {data.slide}
+            </span>
+          )}
+          {data.thumbnail && (
+            <span className="rounded bg-neutral-200/80 px-1.5 py-0.5 text-neutral-700">
+              {data.thumbnail}
+            </span>
+          )}
+        </div>
+      )}
+
       {data.src ? (
         <img
           src={data.src}
@@ -48,7 +67,7 @@ export function toFlowNode(n: ImageNodeData): ImageFlowNode {
     id: n.id,
     type: "image",
     position: n.position,
-    data: { src: n.src, alt: n.alt },
+    data: { src: n.src, alt: n.alt, slide: n.slide, thumbnail: n.thumbnail },
     width: n.size.width,
     height: n.size.height,
   };

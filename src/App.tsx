@@ -37,7 +37,7 @@ function useSeed() {
         id: a,
         position: { x: 0, y: 0 },
         size: DEFAULT_SLIDE_SIZE,
-        markdown: `---\nslide: 1\nthumbnail: Start\n---\n\n# Velkommen\n\nDette er **MapShow**.`,
+        markdown: `---\nslide: 1\nthumbnail: Start\n---\n\n# Velkommen\n\nDette er **MapWise**.`,
       },
     });
     dispatch({

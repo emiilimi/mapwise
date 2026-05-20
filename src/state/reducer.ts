@@ -5,7 +5,7 @@ import {
   type AnyNode,
   type Arrow,
   type MapSettings,
-  type MapShowFile,
+  type MapWiseFile,
 } from "../types";
 
 export interface MapState {
@@ -14,7 +14,7 @@ export interface MapState {
   nodes: AnyNode[];
   edges: Arrow[];
   // Oppdateres ved REPLACE_ALL slik at Canvas kan triggre fitView.
-  // Ikke del av MapShowFile — eksporteres ikke.
+  // Ikke del av MapWiseFile — eksporteres ikke.
   importedAt: number;
 }
 
@@ -35,7 +35,7 @@ export type MapAction =
   | { type: "ADD_EDGE"; edge: Arrow }
   | { type: "DELETE_EDGES"; ids: string[] }
   | { type: "UPDATE_SETTINGS"; patch: Partial<MapSettings> }
-  | { type: "REPLACE_ALL"; file: MapShowFile };
+  | { type: "REPLACE_ALL"; file: MapWiseFile };
 
 // Pure reducer. Ingen side-effects, ingen identitets-hacks — undo/redo i history.ts
 // stoler på at samme action gir samme state, og at strukturen er enkel å snapshotte.

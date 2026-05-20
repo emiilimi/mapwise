@@ -3,18 +3,24 @@ import { useRef, useState } from "react";
 interface Props {
   defaultSrc?: string;
   defaultAlt?: string;
-  onConfirm: (result: { src: string; alt: string }) => void;
+  defaultSlide?: number;
+  defaultThumbnail?: string;
+  onConfirm: (result: { src: string; alt: string; slide?: number; thumbnail?: string }) => void;
   onClose: () => void;
 }
 
 export function ImageDialog({
   defaultSrc = "",
   defaultAlt = "",
+  defaultSlide,
+  defaultThumbnail = "",
   onConfirm,
   onClose,
 }: Props) {
   const [src, setSrc] = useState(defaultSrc);
   const [alt, setAlt] = useState(defaultAlt);
+  const [slideStr, setSlideStr] = useState(defaultSlide != null ? String(defaultSlide) : "");
+  const [thumbnail, setThumbnail] = useState(defaultThumbnail);
   const [imgError, setImgError] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -35,7 +41,13 @@ export function ImageDialog({
   function confirm() {
     const trimmed = src.trim();
     if (!trimmed) return;
-    onConfirm({ src: trimmed, alt: alt.trim() });
+    const slideNum = slideStr.trim() !== "" ? parseFloat(slideStr) : undefined;
+    onConfirm({
+      src: trimmed,
+      alt: alt.trim(),
+      slide: Number.isFinite(slideNum) ? slideNum : undefined,
+      thumbnail: thumbnail.trim() || undefined,
+    });
   }
 
   function onKeyDown(e: React.KeyboardEvent) {
@@ -116,6 +128,30 @@ export function ImageDialog({
         {src && imgError && (
           <p className="text-xs text-red-500">Klarte ikke å laste bildet.</p>
         )}
+
+        <div className="flex gap-2">
+          <label className="flex flex-1 flex-col gap-1">
+            <span className="text-xs text-neutral-500">Slide-nr (valgfri)</span>
+            <input
+              type="number"
+              min={1}
+              value={slideStr}
+              onChange={(e) => setSlideStr(e.target.value)}
+              placeholder="1"
+              className="rounded border border-neutral-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500"
+            />
+          </label>
+          <label className="flex flex-[2] flex-col gap-1">
+            <span className="text-xs text-neutral-500">Thumbnail-tekst (valgfri)</span>
+            <input
+              type="text"
+              value={thumbnail}
+              onChange={(e) => setThumbnail(e.target.value)}
+              placeholder="Kort tittel"
+              className="rounded border border-neutral-300 px-3 py-1.5 text-sm outline-none focus:border-blue-500"
+            />
+          </label>
+        </div>
 
         <label className="flex flex-col gap-1">
           <span className="text-xs text-neutral-500">Alternativ tekst (valgfri)</span>

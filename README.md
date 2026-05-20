@@ -2,7 +2,7 @@
 
 > Crossover av Lucidspark og PowerPoint. Bygg et tankekart av "slide-bokser" koblet med piler, og presenter det &mdash; eller eksporter hele greia som &eacute;n selvinneholdt HTML-fil.
 
-Pakke: `mapwise` &middot; App-navn i UI: **MapShow**
+Pakke: `mapwise` &middot; App-navn i UI: **MapWise**
 
 ## Konsept
 

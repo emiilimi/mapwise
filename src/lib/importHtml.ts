@@ -1,6 +1,6 @@
-import { DEFAULT_SETTINGS, FILE_VERSION, type MapShowFile } from "../types";
+import { DEFAULT_SETTINGS, FILE_VERSION, type MapWiseFile } from "../types";
 
-// Henter ut JSON-blokken fra en eksportert MapShow-HTML. Vi parser ikke
+// Henter ut JSON-blokken fra en eksportert MapWise-HTML. Vi parser ikke
 // hele HTML-dokumentet — en regex på script-tagene er entydig nok så lenge
 // id-attributtet er "mapshow-data".
 const DATA_RE =
@@ -8,7 +8,7 @@ const DATA_RE =
 
 export class ImportError extends Error {}
 
-export async function importFromHtml(html: string): Promise<MapShowFile> {
+export async function importFromHtml(html: string): Promise<MapWiseFile> {
   const match = DATA_RE.exec(html);
   if (!match) {
     throw new ImportError("Fant ikke <script id=\"mapshow-data\"> i filen.");
@@ -24,7 +24,7 @@ export async function importFromHtml(html: string): Promise<MapShowFile> {
   if (!parsed || typeof parsed !== "object") {
     throw new ImportError("mapshow-data er ikke et objekt.");
   }
-  const f = parsed as Partial<MapShowFile>;
+  const f = parsed as Partial<MapWiseFile>;
   if (!Array.isArray(f.nodes) || !Array.isArray(f.edges)) {
     throw new ImportError("Filen mangler nodes/edges-array.");
   }

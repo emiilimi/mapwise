@@ -22,12 +22,13 @@ export function PresenterView() {
   const [step, setStep] = useState(0);
 
   const current = slides[idx] ?? null;
+  const isImageSlide = current?.node.type === "image";
   const showSummary =
     map.settings.showSummaryInPresent && !!current?.summary;
   const summaryAtTop = map.settings.summaryPosition === "top";
-  // Per-slide override via frontmatter.fixedForm.
+  // Per-slide override via frontmatter.fixedForm (only applies to slide nodes).
   const slideFixed = useMemo(
-    () => (current ? parseFrontmatter(current.node.markdown).fixedForm : null),
+    () => (current?.node.type === "slide" ? parseFrontmatter(current.node.markdown).fixedForm : null),
     [current],
   );
   const effectiveFixed = slideFixed ?? map.settings.fixedForm;
@@ -35,10 +36,10 @@ export function PresenterView() {
     ? parseAspectRatio(map.settings.aspectRatio) ?? 16 / 9
     : null;
   const fitRef = useRef<HTMLDivElement>(null);
-  useFitText(fitRef, current?.body ?? "", effectiveFixed, 14, 120);
+  useFitText(fitRef, current?.body ?? "", !isImageSlide && effectiveFixed, 14, 120);
   const segments = useMemo(
-    () => (current ? splitSteps(current.body) : [""]),
-    [current],
+    () => (current && !isImageSlide ? splitSteps(current.body) : [""]),
+    [current, isImageSlide],
   );
   const totalSteps = segments.length;
 
@@ -102,7 +103,15 @@ export function PresenterView() {
             {current?.summary}
           </div>
         )}
-        {effectiveFixed ? (
+        {isImageSlide && current.node.type === "image" ? (
+          <div className="flex flex-1 items-center justify-center">
+            <img
+              src={current.node.src}
+              alt={current.node.alt ?? ""}
+              className="max-h-full max-w-full object-contain rounded shadow-lg"
+            />
+          </div>
+        ) : effectiveFixed ? (
           // Fast form: aspect-låst container som fyller skjermen, auto-fit
           // basert på fullt body-innhold (alle steg synlige for fitter, men
           // opacity skjuler de uavslørte).
@@ -163,16 +172,23 @@ export function PresenterView() {
 
       {/* HUD nede til høyre */}
       <div className="absolute bottom-4 right-4 flex items-center gap-3 rounded-full bg-white/90 px-4 py-2 text-xs text-neutral-700 shadow backdrop-blur">
-        <span>
-          {idx + 1} / {slides.length}
+        <span className="flex items-center gap-1.5">
+          {current?.slide != null && (
+            <span className="rounded bg-blue-600 px-1.5 py-0.5 text-white text-[10px] font-medium">
+              {current.slide}
+            </span>
+          )}
+          <span className="text-neutral-400">{idx + 1}/{slides.length}</span>
           {current?.thumbnail && (
-            <span className="ml-2 text-neutral-400">· {current.thumbnail}</span>
+            <span className="text-neutral-400">· {current.thumbnail}</span>
           )}
         </span>
-        <span className="text-neutral-300">|</span>
-        <span>
-          steg {step + 1}/{totalSteps}
-        </span>
+        {!isImageSlide && totalSteps > 1 && (
+          <>
+            <span className="text-neutral-300">|</span>
+            <span>steg {step + 1}/{totalSteps}</span>
+          </>
+        )}
         <button
           onClick={closePresent}
           className="ml-2 rounded px-2 py-0.5 text-neutral-700 hover:bg-neutral-100"

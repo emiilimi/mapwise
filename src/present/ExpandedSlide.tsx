@@ -30,8 +30,7 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
     return { ...fm, body: splitSteps(fm.body).join("\n\n") };
   }, [node]);
 
-  if (!node || node.type !== "slide") return null;
-
+  // Hooks must run unconditionally before any early returns.
   const { slide, thumbnail, summary, fixedForm: slideFixed, body } = parsed;
   const fullscreen = map.settings.clickBehavior === "fullscreen";
   const showSummary = map.settings.showSummaryInPresent && !!summary;
@@ -42,6 +41,46 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
     : null;
   const fitRef = useRef<HTMLDivElement>(null);
   useFitText(fitRef, body, effectiveFixed, 12, 96);
+
+  if (!node) return null;
+
+  // Image node: full-screen image viewer with slide badge.
+  if (node.type === "image") {
+    return (
+      <div
+        className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 backdrop-blur-sm"
+        onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      >
+        <div
+          className={
+            "flex flex-col rounded-lg bg-white shadow-2xl " +
+            (fullscreen ? "h-[92vh] w-[92vw]" : "h-[70vh] w-[60vw] max-w-3xl")
+          }
+        >
+          <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2 text-xs text-neutral-500">
+            <div className="flex items-center gap-2">
+              {node.slide != null && (
+                <span className="rounded bg-blue-600 px-2 py-0.5 text-white">
+                  Slide {node.slide}
+                </span>
+              )}
+              {node.thumbnail && <span>{node.thumbnail}</span>}
+            </div>
+            <button onClick={onClose} className="rounded px-2 py-1 hover:bg-neutral-100" title="Lukk (Esc)">✕</button>
+          </div>
+          <div className="flex flex-1 items-center justify-center p-4 overflow-hidden">
+            <img
+              src={node.src}
+              alt={node.alt ?? ""}
+              className="max-h-full max-w-full object-contain rounded"
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (node.type !== "slide") return null;
 
   return (
     <div

@@ -278,7 +278,7 @@ function CanvasInner() {
 
       {pendingImagePos && (
         <ImageDialog
-          onConfirm={({ src, alt }) => {
+          onConfirm={({ src, alt, slide, thumbnail }) => {
             dispatch({
               type: "ADD_NODE",
               node: {
@@ -288,6 +288,8 @@ function CanvasInner() {
                 size: { width: 320, height: 200 },
                 src,
                 alt: alt || undefined,
+                slide,
+                thumbnail,
               } satisfies ImageNode,
             });
             setPendingImagePos(null);
@@ -309,11 +311,13 @@ function CanvasInner() {
           <ImageDialog
             defaultSrc={imgNode.src}
             defaultAlt={imgNode.alt}
-            onConfirm={({ src, alt }) => {
+            defaultSlide={imgNode.slide}
+            defaultThumbnail={imgNode.thumbnail}
+            onConfirm={({ src, alt, slide, thumbnail }) => {
               dispatch({
                 type: "UPDATE_NODE",
                 id: editingImageId,
-                patch: { src, alt: alt || undefined },
+                patch: { src, alt: alt || undefined, slide, thumbnail },
               });
               setEditingImageId(null);
             }}

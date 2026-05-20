@@ -23,7 +23,7 @@ export function Toolbar({
   return (
     <div className="flex items-center gap-1 border-b border-neutral-200 bg-white px-3 py-2">
       <div className="mr-4 flex flex-col items-start">
-        <span className="text-base font-semibold leading-none">MapShow</span>
+        <span className="text-base font-semibold leading-none">MapWise</span>
         <span className="text-[10px] text-neutral-400">redigerer</span>
       </div>
 
