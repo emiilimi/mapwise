@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTool } from "../hooks/useTool";
 import { useMap, useStore } from "../state/store";
 import { parseFrontmatter } from "../lib/frontmatter";
+import { ImageDialog } from "./ImageDialog";
 import type { SlideNode, TextNode, AnyNode } from "../types";
 
 export function NodeEditor() {
@@ -41,6 +42,57 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
   const dirty = text !== initialText;
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const pendingCursor = useRef<number | null>(null);
+  const [imageDialogOpen, setImageDialogOpen] = useState(false);
+
+  function insertLink() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+    const selected = text.slice(start, end);
+    if (selected) {
+      // Wrap: [selected text]() — cursor plasseres etter "("
+      setText(text.slice(0, start) + `[${selected}]()` + text.slice(end));
+      pendingCursor.current = start + selected.length + 3;
+    } else {
+      // Tomt: []() — cursor plasseres mellom "[" og "]"
+      setText(text.slice(0, start) + `[]()` + text.slice(start));
+      pendingCursor.current = start + 1;
+    }
+  }
+
+  function insertImage(src: string, alt: string) {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+    const md = `![${alt}](${src})`;
+    setText(text.slice(0, start) + md + text.slice(end));
+    pendingCursor.current = start + md.length;
+    // Re-fokuser textarea etter at dialog er lukket.
+    setTimeout(() => textareaRef.current?.focus(), 0);
+  }
+
+  function onPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (let i = 0; i < items.length; i++) {
+      const it = items[i];
+      if (it.kind === "file" && it.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = it.getAsFile();
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") {
+            insertImage(reader.result, "");
+          }
+        };
+        reader.readAsDataURL(file);
+        return;
+      }
+    }
+  }
 
   // Fokus textarea ved åpning og plasser markør på slutten.
   useEffect(() => {
@@ -84,25 +136,13 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
       save();
     } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
       e.preventDefault();
-      const ta = textareaRef.current;
-      if (!ta) return;
-      const start = ta.selectionStart ?? 0;
-      const end = ta.selectionEnd ?? 0;
-      const selected = text.slice(start, end);
-      if (selected) {
-        // Wrap: [selected text]() — cursor plasseres etter "("
-        setText(text.slice(0, start) + `[${selected}]()` + text.slice(end));
-        pendingCursor.current = start + selected.length + 3;
-      } else {
-        // Tomt: []() — cursor plasseres mellom "[" og "]"
-        setText(text.slice(0, start) + `[]()` + text.slice(start));
-        pendingCursor.current = start + 1;
-      }
+      insertLink();
     } else if (e.key === "Escape") {
       e.preventDefault();
       tryClose();
     }
   }
+
 
   return (
     <div
@@ -176,10 +216,43 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
           ref={textareaRef}
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onPaste={onPaste}
           spellCheck={false}
           className="flex-1 resize-none p-4 font-mono text-sm leading-relaxed outline-none"
         />
+
+        <div className="flex items-center gap-2 border-t border-neutral-200 bg-neutral-50 px-4 py-2 text-xs">
+          <button
+            type="button"
+            onClick={insertLink}
+            className="rounded border border-neutral-300 bg-white px-2 py-1 hover:bg-neutral-100"
+            title="Sett inn lenke (Ctrl+K)"
+          >
+            🔗 Lenke
+          </button>
+          <button
+            type="button"
+            onClick={() => setImageDialogOpen(true)}
+            className="rounded border border-neutral-300 bg-white px-2 py-1 hover:bg-neutral-100"
+            title="Sett inn bilde"
+          >
+            🖼 Bilde
+          </button>
+          <span className="ml-auto text-neutral-400">Lim inn bilde direkte med Ctrl+V</span>
+        </div>
       </div>
+
+      {imageDialogOpen && (
+        <ImageDialog
+          inline
+          title="Sett inn bilde i markdown"
+          onConfirm={({ src, alt }) => {
+            insertImage(src, alt);
+            setImageDialogOpen(false);
+          }}
+          onClose={() => setImageDialogOpen(false)}
+        />
+      )}
     </div>
   );
 }

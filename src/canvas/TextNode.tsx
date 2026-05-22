@@ -1,17 +1,35 @@
-import { memo } from "react";
+import { memo, useMemo, useRef } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, NodeResizer, Position, type Node } from "@xyflow/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import type { TextNode as TextNodeData } from "../types";
 import { DEFAULT_TEXT_SIZE } from "../types";
 import { markdownComponents } from "../lib/markdownComponents";
+import { useShiftResize } from "../lib/useShiftResize";
+import { useMap, useStore } from "../state/store";
 
 export type TextFlowNode = Node<{ content: string }, "text">;
 
-function TextNodeImpl({ data, selected }: NodeProps<TextFlowNode>) {
+function TextNodeImpl({ id, data, selected, width, height }: NodeProps<TextFlowNode>) {
+  const map = useMap();
+  const { dispatch } = useStore();
+  const nodeData = useMemo(() => map.nodes.find((n) => n.id === id), [map.nodes, id]);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  useShiftResize(wrapperRef, {
+    id,
+    position: nodeData?.position ?? { x: 0, y: 0 },
+    size: { width: width ?? 220, height: height ?? 120 },
+    minWidth: 100,
+    minHeight: 60,
+    aspectRatio: null,
+    dispatch,
+    enabled: !!nodeData,
+  });
   return (
     <div
+      ref={wrapperRef}
       className={
         "relative h-full w-full overflow-hidden rounded-lg border bg-yellow-50 shadow-sm transition-shadow " +
         (selected
@@ -28,7 +46,7 @@ function TextNodeImpl({ data, selected }: NodeProps<TextFlowNode>) {
       />
       <Handle type="target" position={Position.Top} className="!bg-neutral-400" />
       <div className="markdown-body h-full w-full overflow-hidden p-3 text-sm leading-snug">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
           {data.content}
         </ReactMarkdown>
       </div>

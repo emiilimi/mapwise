@@ -9,9 +9,12 @@ import {
 } from "@xyflow/react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 import { useFitText } from "../lib/useFitText";
+import { useShiftResize } from "../lib/useShiftResize";
 import { markdownComponents } from "../lib/markdownComponents";
+import { extractPositionedImages, stripPositionSyntax } from "../lib/positionedImages";
 import { splitSteps } from "../present/stepSplitter";
 import { useMap, useStore } from "../state/store";
 import { parseAspectRatio } from "../types";
@@ -36,11 +39,12 @@ function SlideNodeImpl({
 }: NodeProps<SlideFlowNode>) {
   const { slide, thumbnail, summary, textSize, fixedForm: slideFixed, body: rawBody } =
     useMemo(() => parseFrontmatter(data.markdown), [data.markdown]);
-  const body = useMemo(() => splitSteps(rawBody).join("\n\n"), [rawBody]);
+  const stepsBody = useMemo(() => splitSteps(rawBody).join("\n\n"), [rawBody]);
   const baseFontSize = textSize ?? DEFAULT_SLIDE_TEXT_SIZE;
 
   const zoom = useRfStore(zoomSelector);
-  const settings = useMap().settings;
+  const map = useMap();
+  const settings = map.settings;
   // Per-slide-frontmatter overstyrer kart-innstillingen.
   const fixedForm = slideFixed ?? settings.fixedForm;
   const { inPresent } = usePresentContext();
@@ -48,6 +52,17 @@ function SlideNodeImpl({
   const aspect = settings.fixedForm
     ? parseAspectRatio(settings.aspectRatio)
     : null;
+
+  // I fixedForm: trekk ut posisjonerte bilder for å rendre dem som
+  // absolutt-posisjonerte overlay. I fri form: bare strip syntakset så
+  // bildet vises inline uten {...}-suffikset.
+  const { body, positionedImages } = useMemo(() => {
+    if (fixedForm) {
+      const r = extractPositionedImages(stepsBody);
+      return { body: r.cleaned, positionedImages: r.images };
+    }
+    return { body: stripPositionSyntax(stepsBody), positionedImages: [] };
+  }, [stepsBody, fixedForm]);
 
   // Overflow-detect på markdown-body. ResizeObserver fanger både endringer
   // i innholdets høyde og når brukeren resizer noden. I fast form er
@@ -76,6 +91,20 @@ function SlideNodeImpl({
   // får plass. Krymper ikke (brukeren kan dra hjørnet ned manuelt).
   const containEnabled = !fixedForm && settings.containMode;
   const { dispatch } = useStore();
+  const nodeData = useMemo(() => map.nodes.find((n) => n.id === id), [map.nodes, id]);
+
+  // Shift+drag-resize på hele node-boksen.
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  useShiftResize(wrapperRef, {
+    id,
+    position: nodeData?.position ?? { x: 0, y: 0 },
+    size: { width: width ?? 320, height: height ?? 200 },
+    minWidth: 120,
+    minHeight: 80,
+    aspectRatio: aspect,
+    dispatch,
+    enabled: !!nodeData,
+  });
   const lastContainHeight = useRef(-1);
   useEffect(() => {
     if (!containEnabled) return;
@@ -112,6 +141,7 @@ function SlideNodeImpl({
 
   return (
     <div
+      ref={wrapperRef}
       className={
         "relative h-full w-full overflow-hidden rounded-lg border bg-white shadow-sm transition-shadow " +
         (selected
@@ -165,8 +195,29 @@ function SlideNodeImpl({
             {summary}
           </p>
         )}
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{body}</ReactMarkdown>
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{body}</ReactMarkdown>
       </div>
+
+      {/* Posisjonerte bilder (fixedForm). Rendres som overlay over markdown. */}
+      {positionedImages.length > 0 && !showThumbnail && (
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          {positionedImages.map((img, i) => (
+            <img
+              key={i}
+              src={img.src}
+              alt={img.alt}
+              style={{
+                position: "absolute",
+                left: img.x,
+                top: img.y,
+                width: img.w,
+                height: img.h,
+              }}
+              draggable={false}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Thumbnail-overlay */}
       <div

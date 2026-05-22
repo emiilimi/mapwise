@@ -19,7 +19,7 @@ export interface HistoryState {
   present: MapState;
   future: MapState[];
   // Sporing for MOVE/RESIZE-merge. Null når siste handling ikke var en drag.
-  lastDrag: { id: string; kind: "move" | "resize"; at: number } | null;
+  lastDrag: { id: string; kind: "move" | "resize" | "transform"; at: number } | null;
 }
 
 export const initialHistoryState: HistoryState = {
@@ -50,17 +50,21 @@ export function historyReducer(
       const next = mapReducer(state.present, ha.action);
       if (next === state.present) return state;
 
-      // MOVE/RESIZE-merge: behold snapshotet fra før draget startet.
-      const dragKind: "move" | "resize" | null =
+      // MOVE/RESIZE/TRANSFORM-merge: behold snapshotet fra før draget startet.
+      const dragKind: "move" | "resize" | "transform" | null =
         ha.action.type === "MOVE_NODE"
           ? "move"
           : ha.action.type === "RESIZE_NODE"
             ? "resize"
-            : null;
+            : ha.action.type === "TRANSFORM_NODE"
+              ? "transform"
+              : null;
 
       if (dragKind !== null) {
         const id =
-          ha.action.type === "MOVE_NODE" || ha.action.type === "RESIZE_NODE"
+          ha.action.type === "MOVE_NODE" ||
+          ha.action.type === "RESIZE_NODE" ||
+          ha.action.type === "TRANSFORM_NODE"
             ? ha.action.id
             : "";
         const now = Date.now();

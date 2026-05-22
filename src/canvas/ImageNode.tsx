@@ -1,16 +1,41 @@
-import { memo } from "react";
+import { memo, useMemo, useRef } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, NodeResizer, Position, type Node } from "@xyflow/react";
 import type { ImageNode as ImageNodeData } from "../types";
+import { useShiftResize } from "../lib/useShiftResize";
+import { useMap, useStore } from "../state/store";
 
 export type ImageFlowNode = Node<
-  { src: string; alt?: string; slide?: number; thumbnail?: string },
+  {
+    src: string;
+    alt?: string;
+    slide?: number;
+    thumbnail?: string;
+    sourceName?: string;
+    sourceUrl?: string;
+  },
   "image"
 >;
 
-function ImageNodeImpl({ data, selected }: NodeProps<ImageFlowNode>) {
+function ImageNodeImpl({ id, data, selected, width, height }: NodeProps<ImageFlowNode>) {
+  const map = useMap();
+  const { dispatch } = useStore();
+  const nodeData = useMemo(() => map.nodes.find((n) => n.id === id), [map.nodes, id]);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const aspectRatio = width && height ? width / height : null;
+  useShiftResize(wrapperRef, {
+    id,
+    position: nodeData?.position ?? { x: 0, y: 0 },
+    size: { width: width ?? 320, height: height ?? 200 },
+    minWidth: 80,
+    minHeight: 60,
+    aspectRatio,
+    dispatch,
+    enabled: !!nodeData,
+  });
   return (
     <div
+      ref={wrapperRef}
       className={
         "relative h-full w-full overflow-hidden rounded-lg border bg-neutral-100 shadow-sm transition-shadow " +
         (selected
@@ -55,6 +80,24 @@ function ImageNodeImpl({ data, selected }: NodeProps<ImageFlowNode>) {
           Ingen bilde
         </div>
       )}
+      {(data.sourceName || data.sourceUrl) && (
+        <div className="absolute bottom-0 left-0 right-0 z-10 truncate bg-black/50 px-2 py-0.5 text-[10px] text-white">
+          {data.sourceUrl ? (
+            <a
+              href={data.sourceUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-white hover:underline"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {data.sourceName || data.sourceUrl}
+            </a>
+          ) : (
+            <span>{data.sourceName}</span>
+          )}
+        </div>
+      )}
+
       <Handle type="source" position={Position.Bottom} className="!bg-neutral-400" />
     </div>
   );
@@ -67,7 +110,14 @@ export function toFlowNode(n: ImageNodeData): ImageFlowNode {
     id: n.id,
     type: "image",
     position: n.position,
-    data: { src: n.src, alt: n.alt, slide: n.slide, thumbnail: n.thumbnail },
+    data: {
+      src: n.src,
+      alt: n.alt,
+      slide: n.slide,
+      thumbnail: n.thumbnail,
+      sourceName: n.sourceName,
+      sourceUrl: n.sourceUrl,
+    },
     width: n.size.width,
     height: n.size.height,
   };

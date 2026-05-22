@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { parseFrontmatter } from "../lib/frontmatter";
 import { markdownComponents } from "../lib/markdownComponents";
 import { useFitText } from "../lib/useFitText";
+import { extractPositionedImages, stripPositionSyntax } from "../lib/positionedImages";
 import { useMap } from "../state/store";
 import { useTool } from "../hooks/useTool";
 import { parseAspectRatio } from "../types";
@@ -37,10 +39,22 @@ export function PresenterView() {
     : null;
   const fitRef = useRef<HTMLDivElement>(null);
   useFitText(fitRef, current?.body ?? "", !isImageSlide && effectiveFixed, 14, 120);
-  const segments = useMemo(
-    () => (current && !isImageSlide ? splitSteps(current.body) : [""]),
-    [current, isImageSlide],
-  );
+  // Posisjonerte bilder kun i fixedForm. I fri form strippes syntakset.
+  const processedSegments = useMemo(() => {
+    if (!current || isImageSlide) return { segments: [""], images: [] as ReturnType<typeof extractPositionedImages>["images"] };
+    const raw = splitSteps(current.body);
+    if (effectiveFixed) {
+      // Trekk ut posisjonerte bilder fra hele body, og strip dem fra hver segment.
+      const r = extractPositionedImages(current.body);
+      // For at posisjonerte bilder ikke skal dukke opp i segmenter heller:
+      const segments = raw.map((s) => extractPositionedImages(s).cleaned);
+      return { segments, images: r.images };
+    }
+    return { segments: raw.map(stripPositionSyntax), images: [] };
+  }, [current, isImageSlide, effectiveFixed]);
+  const segments = processedSegments.segments;
+  const positionedImages = processedSegments.images;
+  const nominalSize = current?.node.type === "slide" ? current.node.size : { width: 320, height: 200 };
   const totalSteps = segments.length;
 
   const advance = useCallback(() => {
@@ -104,12 +118,29 @@ export function PresenterView() {
           </div>
         )}
         {isImageSlide && current.node.type === "image" ? (
-          <div className="flex flex-1 items-center justify-center">
+          <div className="flex flex-1 flex-col items-center justify-center gap-3">
             <img
               src={current.node.src}
               alt={current.node.alt ?? ""}
-              className="max-h-full max-w-full object-contain rounded shadow-lg"
+              className="max-h-[90%] max-w-full object-contain rounded shadow-lg"
             />
+            {(current.node.sourceName || current.node.sourceUrl) && (
+              <div className="text-sm text-neutral-500">
+                Kilde:{" "}
+                {current.node.sourceUrl ? (
+                  <a
+                    href={current.node.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:underline"
+                  >
+                    {current.node.sourceName || current.node.sourceUrl}
+                  </a>
+                ) : (
+                  <span>{current.node.sourceName}</span>
+                )}
+              </div>
+            )}
           </div>
         ) : effectiveFixed ? (
           // Fast form: aspect-låst container som fyller skjermen, auto-fit
@@ -126,7 +157,7 @@ export function PresenterView() {
             >
               <div
                 ref={fitRef}
-                className="markdown-body h-full w-full overflow-hidden p-10 leading-snug"
+                className="markdown-body relative h-full w-full overflow-hidden p-10 leading-snug"
               >
                 {segments.map((seg, i) => (
                   <div
@@ -138,8 +169,24 @@ export function PresenterView() {
                     }}
                     aria-hidden={i > step}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{seg}</ReactMarkdown>
+                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{seg}</ReactMarkdown>
                   </div>
+                ))}
+                {positionedImages.map((img, i) => (
+                  <img
+                    key={`img-${i}`}
+                    src={img.src}
+                    alt={img.alt}
+                    style={{
+                      position: "absolute",
+                      left: `${(img.x / nominalSize.width) * 100}%`,
+                      top: `${(img.y / nominalSize.height) * 100}%`,
+                      width: img.w ? `${(img.w / nominalSize.width) * 100}%` : undefined,
+                      height: img.h ? `${(img.h / nominalSize.height) * 100}%` : undefined,
+                      pointerEvents: "none",
+                    }}
+                    draggable={false}
+                  />
                 ))}
               </div>
             </div>
@@ -157,7 +204,7 @@ export function PresenterView() {
                   }}
                   aria-hidden={i > step}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{seg}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{seg}</ReactMarkdown>
                 </div>
               ))}
             </div>

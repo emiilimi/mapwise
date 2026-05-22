@@ -222,6 +222,53 @@ function CanvasInner() {
     }
   }
 
+  // Paste-bilde fra utklippstavla → ny ImageNode i viewport-senter.
+  useEffect(() => {
+    function onPaste(e: ClipboardEvent) {
+      const active = document.activeElement;
+      // Ikke kapr paste-events i tekstfelter / modaler.
+      if (
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement ||
+        (active && (active as HTMLElement).isContentEditable)
+      ) {
+        return;
+      }
+      const items = e.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i++) {
+        const it = items[i];
+        if (it.kind === "file" && it.type.startsWith("image/")) {
+          e.preventDefault();
+          const file = it.getAsFile();
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            if (typeof reader.result !== "string") return;
+            const center = rf.screenToFlowPosition({
+              x: window.innerWidth / 2,
+              y: window.innerHeight / 2,
+            });
+            dispatch({
+              type: "ADD_NODE",
+              node: {
+                type: "image",
+                id: newId(),
+                position: { x: center.x - 160, y: center.y - 100 },
+                size: { width: 320, height: 200 },
+                src: reader.result,
+              } satisfies ImageNode,
+            });
+          };
+          reader.readAsDataURL(file);
+          return;
+        }
+      }
+    }
+    window.addEventListener("paste", onPaste);
+    return () => window.removeEventListener("paste", onPaste);
+  }, [rf, dispatch]);
+
   const placementMode = tool === "slide" || tool === "text" || tool === "image";
   const cursor = placementMode || tool === "arrow" ? "crosshair" : undefined;
 
@@ -278,7 +325,7 @@ function CanvasInner() {
 
       {pendingImagePos && (
         <ImageDialog
-          onConfirm={({ src, alt, slide, thumbnail }) => {
+          onConfirm={({ src, alt, slide, thumbnail, sourceName, sourceUrl }) => {
             dispatch({
               type: "ADD_NODE",
               node: {
@@ -290,6 +337,8 @@ function CanvasInner() {
                 alt: alt || undefined,
                 slide,
                 thumbnail,
+                sourceName,
+                sourceUrl,
               } satisfies ImageNode,
             });
             setPendingImagePos(null);
@@ -313,11 +362,13 @@ function CanvasInner() {
             defaultAlt={imgNode.alt}
             defaultSlide={imgNode.slide}
             defaultThumbnail={imgNode.thumbnail}
-            onConfirm={({ src, alt, slide, thumbnail }) => {
+            defaultSourceName={imgNode.sourceName}
+            defaultSourceUrl={imgNode.sourceUrl}
+            onConfirm={({ src, alt, slide, thumbnail, sourceName, sourceUrl }) => {
               dispatch({
                 type: "UPDATE_NODE",
                 id: editingImageId,
-                patch: { src, alt: alt || undefined, slide, thumbnail },
+                patch: { src, alt: alt || undefined, slide, thumbnail, sourceName, sourceUrl },
               });
               setEditingImageId(null);
             }}

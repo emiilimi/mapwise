@@ -1,9 +1,11 @@
 import { useMemo, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
 import { parseFrontmatter } from "../lib/frontmatter";
 import { markdownComponents } from "../lib/markdownComponents";
 import { useFitText } from "../lib/useFitText";
+import { extractPositionedImages, stripPositionSyntax } from "../lib/positionedImages";
 import { splitSteps } from "./stepSplitter";
 import { useMap } from "../state/store";
 import { parseAspectRatio } from "../types";
@@ -31,7 +33,7 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
   }, [node]);
 
   // Hooks must run unconditionally before any early returns.
-  const { slide, thumbnail, summary, fixedForm: slideFixed, body } = parsed;
+  const { slide, thumbnail, summary, fixedForm: slideFixed, body: parsedBody } = parsed;
   const fullscreen = map.settings.clickBehavior === "fullscreen";
   const showSummary = map.settings.showSummaryInPresent && !!summary;
   const summaryAtTop = map.settings.summaryPosition === "top";
@@ -39,6 +41,15 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
   const aspect = effectiveFixed
     ? parseAspectRatio(map.settings.aspectRatio) ?? 16 / 9
     : null;
+  // Posisjonerte bilder bare i fixedForm — ellers strippes syntakset.
+  const { body, positionedImages } = useMemo(() => {
+    if (effectiveFixed) {
+      const r = extractPositionedImages(parsedBody);
+      return { body: r.cleaned, positionedImages: r.images };
+    }
+    return { body: stripPositionSyntax(parsedBody), positionedImages: [] };
+  }, [parsedBody, effectiveFixed]);
+  const nominalSize = node && node.type === "slide" ? node.size : { width: 320, height: 200 };
   const fitRef = useRef<HTMLDivElement>(null);
   useFitText(fitRef, body, effectiveFixed, 12, 96);
 
@@ -75,6 +86,23 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
               className="max-h-full max-w-full object-contain rounded"
             />
           </div>
+          {(node.sourceName || node.sourceUrl) && (
+            <div className="border-t border-neutral-200 px-4 py-2 text-xs text-neutral-500">
+              Kilde:{" "}
+              {node.sourceUrl ? (
+                <a
+                  href={node.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline"
+                >
+                  {node.sourceName || node.sourceUrl}
+                </a>
+              ) : (
+                <span>{node.sourceName}</span>
+              )}
+            </div>
+          )}
         </div>
       </div>
     );
@@ -130,15 +158,31 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
             >
               <div
                 ref={fitRef}
-                className="markdown-body h-full w-full overflow-hidden p-8 leading-snug"
+                className="markdown-body relative h-full w-full overflow-hidden p-8 leading-snug"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{body}</ReactMarkdown>
+                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{body}</ReactMarkdown>
+                {positionedImages.map((img, i) => (
+                  <img
+                    key={i}
+                    src={img.src}
+                    alt={img.alt}
+                    style={{
+                      position: "absolute",
+                      left: `${(img.x / nominalSize.width) * 100}%`,
+                      top: `${(img.y / nominalSize.height) * 100}%`,
+                      width: img.w ? `${(img.w / nominalSize.width) * 100}%` : undefined,
+                      height: img.h ? `${(img.h / nominalSize.height) * 100}%` : undefined,
+                      pointerEvents: "none",
+                    }}
+                    draggable={false}
+                  />
+                ))}
               </div>
             </div>
           </div>
         ) : (
           <div className="markdown-body flex-1 overflow-auto p-8 text-base leading-relaxed">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>{body}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{body}</ReactMarkdown>
           </div>
         )}
         {showSummary && !summaryAtTop && (

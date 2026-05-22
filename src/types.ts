@@ -17,6 +17,8 @@ export interface ImageNode {
   alt?: string;
   slide?: number;
   thumbnail?: string;
+  sourceName?: string;
+  sourceUrl?: string;
 }
 
 export type AnyNode = SlideNode | TextNode | ImageNode;

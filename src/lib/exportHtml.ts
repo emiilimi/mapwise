@@ -131,7 +131,7 @@ export async function exportSelfContained(
 </html>`;
   return {
     files: [
-      { name: "mapshow.html", blob: new Blob([html], { type: "text/html" }) },
+      { name: "mapwise.html", blob: new Blob([html], { type: "text/html" }) },
     ],
   };
 }
@@ -155,7 +155,7 @@ export async function exportCompact(state: MapState): Promise<ExportResult> {
 </html>`;
   return {
     files: [
-      { name: "mapshow.html", blob: new Blob([html], { type: "text/html" }) },
+      { name: "mapwise.html", blob: new Blob([html], { type: "text/html" }) },
       {
         name: "mapshow-viewer.js",
         blob: new Blob([js], { type: "application/javascript" }),

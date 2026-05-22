@@ -31,6 +31,12 @@ export type MapAction =
   | { type: "UPDATE_NODE"; id: string; patch: Partial<AnyNode> }
   | { type: "MOVE_NODE"; id: string; position: { x: number; y: number } }
   | { type: "RESIZE_NODE"; id: string; size: { width: number; height: number } }
+  | {
+      type: "TRANSFORM_NODE";
+      id: string;
+      position: { x: number; y: number };
+      size: { width: number; height: number };
+    }
   | { type: "DELETE_NODES"; ids: string[] }
   | { type: "ADD_EDGE"; edge: Arrow }
   | { type: "DELETE_EDGES"; ids: string[] }
@@ -71,6 +77,16 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
           if (n.id !== action.id) return n;
           if (n.type !== "slide" && n.type !== "image" && n.type !== "text") return n;
           return { ...n, size: action.size };
+        }),
+      };
+
+    case "TRANSFORM_NODE":
+      return {
+        ...state,
+        nodes: state.nodes.map((n) => {
+          if (n.id !== action.id) return n;
+          if (n.type !== "slide" && n.type !== "image" && n.type !== "text") return n;
+          return { ...n, position: action.position, size: action.size };
         }),
       };
 
