@@ -48,6 +48,27 @@ Når `fixedForm` er aktivert (globalt eller per slide) låses sideforholdet (sta
 <video src="..."></video>
 ```
 
+## Slide-panel (sidebar)
+
+Et kollapsbart panel (knappen `‹ / ›` til venstre, eller «Slides» i verktøy-
+linja) viser alle slides i presentasjonsrekkefølge med mini-previews — som i
+PowerPoint/Google Slides.
+
+- **Klikk** en rad for å sentrere kartet på den sliden.
+- **Endre rekkefølge** ved å dra raden opp/ned, eller skriv inn ønsket posisjon
+  i nummer-feltet. Slide-numrene (`slide:`) renummereres automatisk.
+- **Uplasserte slides** (f.eks. fra PPTX-import) vises med «ny»-merke. Dra dem
+  ut på kartet for å plassere dem, eller bruk «Plasser alle».
+
+## Import
+
+| Format | Beskrivelse |
+|---|---|
+| **MapWise-HTML** | En tidligere eksportert `.html` lastes tilbake for videre redigering. |
+| **PowerPoint (`.pptx`)** | Tekst (titler + punkter) og innebygde bilder trekkes ut til redigerbare markdown-slides. Layouten er omtrentlig, ikke pikseltro. Slidene havner i sidebar-ventelista til du drar dem ut på kartet. |
+
+Åpne via 📂-knappen. Import **erstatter** gjeldende kart.
+
 ## Presentasjon
 
 - **Utforsk-modus** — klikk en slide for å åpne den utvidet. Naviger med piltastene.
@@ -110,4 +131,4 @@ corepack pnpm build:viewer # bygg viewer-bundle separat
 
 ## Stack
 
-`React 19` · `Vite 6` · `TypeScript` · `@xyflow/react v12` · `react-markdown` + `remark-gfm` + `rehype-raw` · `gray-matter` · `Tailwind v4` · `useReducer` + Context
+`React 19` · `Vite 6` · `TypeScript` · `@xyflow/react v12` · `react-markdown` + `remark-gfm` + `rehype-raw` · `js-yaml` (frontmatter) · `jszip` (pptx-import) · `Tailwind v4` · `useReducer` + Context
