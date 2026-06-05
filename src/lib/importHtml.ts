@@ -33,5 +33,6 @@ export async function importFromHtml(html: string): Promise<MapWiseFile> {
     settings: { ...DEFAULT_SETTINGS, ...(f.settings ?? {}) },
     nodes: f.nodes,
     edges: f.edges,
+    tray: Array.isArray(f.tray) ? f.tray : [],
   };
 }

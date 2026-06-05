@@ -6,6 +6,7 @@ import {
   type Arrow,
   type MapSettings,
   type MapWiseFile,
+  type SlideNode,
 } from "../types";
 import { setSlideNumber } from "../lib/frontmatter";
 
@@ -14,6 +15,9 @@ export interface MapState {
   settings: MapSettings;
   nodes: AnyNode[];
   edges: Arrow[];
+  // Uplasserte slides (venteliste/tray). Del av MapWiseFile, men ikke en del
+  // av kartet — vises kun i sidebaren til de dras ut.
+  tray: SlideNode[];
   // Oppdateres ved REPLACE_ALL slik at Canvas kan triggre fitView.
   // Ikke del av MapWiseFile — eksporteres ikke.
   importedAt: number;
@@ -24,6 +28,7 @@ export const initialMapState: MapState = {
   settings: DEFAULT_SETTINGS,
   nodes: [],
   edges: [],
+  tray: [],
   importedAt: 0,
 };
 
@@ -43,6 +48,8 @@ export type MapAction =
   | { type: "DELETE_EDGES"; ids: string[] }
   | { type: "UPDATE_SETTINGS"; patch: Partial<MapSettings> }
   | { type: "REORDER_SLIDES"; order: string[] }
+  | { type: "PLACE_FROM_TRAY"; id: string; position: { x: number; y: number } }
+  | { type: "PLACE_ALL_FROM_TRAY" }
   | { type: "REPLACE_ALL"; file: MapWiseFile };
 
 // Pure reducer. Ingen side-effects, ingen identitets-hacks — undo/redo i history.ts
@@ -144,7 +151,8 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
 
     case "REORDER_SLIDES": {
       // Tildel slide-nummer 1..N etter ny rekkefølge. Ider som ikke er med i
-      // `order` beholder sin markdown/`slide` urørt.
+      // `order` beholder sin markdown/`slide` urørt. Gjelder både kart-noder
+      // og tray (uplasserte slides) siden begge vises i sidebaren.
       const orderMap = new Map(action.order.map((id, i) => [id, i + 1]));
       if (orderMap.size === 0) return state;
       return {
@@ -157,6 +165,48 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
           if (n.type === "image") return { ...n, slide: num };
           return n;
         }),
+        tray: state.tray.map((n) => {
+          const num = orderMap.get(n.id);
+          return num === undefined
+            ? n
+            : { ...n, markdown: setSlideNumber(n.markdown, num) };
+        }),
+      };
+    }
+
+    case "PLACE_FROM_TRAY": {
+      const slide = state.tray.find((n) => n.id === action.id);
+      if (!slide) return state;
+      return {
+        ...state,
+        tray: state.tray.filter((n) => n.id !== action.id),
+        nodes: [...state.nodes, { ...slide, position: action.position }],
+      };
+    }
+
+    case "PLACE_ALL_FROM_TRAY": {
+      if (state.tray.length === 0) return state;
+      // Plasser hele tray-en i et grid til høyre for eksisterende noder.
+      const COLS = 4;
+      const GAP = 40;
+      const cellW = state.tray[0]?.size.width ?? 320;
+      const cellH = state.tray[0]?.size.height ?? 200;
+      const startX = state.nodes.reduce((max, n) => {
+        const w = "size" in n && n.size ? n.size.width : 0;
+        return Math.max(max, n.position.x + w + GAP);
+      }, 0);
+      const placed = state.tray.map((slide, i) => ({
+        ...slide,
+        position: {
+          x: startX + (i % COLS) * (cellW + GAP),
+          y: Math.floor(i / COLS) * (cellH + GAP),
+        },
+      }));
+      return {
+        ...state,
+        tray: [],
+        nodes: [...state.nodes, ...placed],
+        importedAt: Date.now(),
       };
     }
 
@@ -166,6 +216,7 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
         settings: { ...DEFAULT_SETTINGS, ...action.file.settings },
         nodes: action.file.nodes,
         edges: action.file.edges,
+        tray: action.file.tray ?? [],
         importedAt: Date.now(),
       };
   }

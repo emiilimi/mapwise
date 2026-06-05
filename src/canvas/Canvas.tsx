@@ -21,6 +21,7 @@ import { toFlowNode as toImageFlow } from "./ImageNode";
 import { nodeTypes } from "./nodeTypes";
 import { ImageDialog } from "../modals/ImageDialog";
 import { ContextMenu } from "./ContextMenu";
+import { SLIDE_DND_MIME } from "../sidebar/SlidePanel";
 import { newId } from "../lib/id";
 import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE, DEFAULT_TEXT_SIZE, parseAspectRatio, type ImageNode } from "../types";
 
@@ -275,6 +276,25 @@ function CanvasInner() {
     return () => window.removeEventListener("paste", onPaste);
   }, [rf, dispatch]);
 
+  // Slipp en slide fra sidebaren (tray) ut på kartet.
+  const onDrop = useCallback(
+    (e: React.DragEvent) => {
+      const id = e.dataTransfer.getData(SLIDE_DND_MIME);
+      if (!id) return;
+      e.preventDefault();
+      const pos = rf.screenToFlowPosition({ x: e.clientX, y: e.clientY });
+      dispatch({ type: "PLACE_FROM_TRAY", id, position: pos });
+    },
+    [rf, dispatch],
+  );
+
+  const onDragOver = useCallback((e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes(SLIDE_DND_MIME)) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+    }
+  }, []);
+
   const placementMode = tool === "slide" || tool === "text" || tool === "image";
   const cursor = placementMode || tool === "arrow" ? "crosshair" : undefined;
 
@@ -282,6 +302,8 @@ function CanvasInner() {
     <div
       className="relative h-full w-full"
       style={{ background: map.settings.canvasBackground, cursor }}
+      onDrop={onDrop}
+      onDragOver={onDragOver}
     >
       <ReactFlow
         nodes={nodes}

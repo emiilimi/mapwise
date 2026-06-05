@@ -39,6 +39,8 @@ function loadFile(): MapState {
     settings: { ...DEFAULT_SETTINGS, ...(f.settings ?? {}) },
     nodes: Array.isArray(f.nodes) ? f.nodes : [],
     edges: Array.isArray(f.edges) ? f.edges : [],
+    // Viewer presenterer bare plasserte slides; tray ignoreres.
+    tray: [],
     importedAt: 0,
   };
 }

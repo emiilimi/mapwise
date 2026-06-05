@@ -5,7 +5,7 @@ import { getOrderedSlides, type OrderedSlide } from "../present/slideOrder";
 import { splitSteps } from "../present/stepSplitter";
 import { stripPositionSyntax } from "../lib/positionedImages";
 import { SafeMarkdown } from "../lib/SafeMarkdown";
-import { DEFAULT_SLIDE_TEXT_SIZE } from "../lib/frontmatter";
+import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 
 const PREVIEW_W = 200;
 
@@ -119,15 +119,44 @@ function PositionInput({
   );
 }
 
+interface PanelEntry {
+  entry: OrderedSlide;
+  placed: boolean;
+}
+
 export function SlidePanel() {
   const map = useMap();
   const { dispatch } = useStore();
   const { focusNode } = useTool();
-  const slides = useMemo(() => getOrderedSlides(map), [map]);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
-  const ids = useMemo(() => slides.map((s) => s.node.id), [slides]);
+  // Plasserte slides (på kartet) + tray (uplasserte), sortert sammen på
+  // slide-nummer. Tray-slides uten nummer havner sist.
+  const entries = useMemo<PanelEntry[]>(() => {
+    const placed: PanelEntry[] = getOrderedSlides(map).map((entry) => ({
+      entry,
+      placed: true,
+    }));
+    const tray: PanelEntry[] = map.tray.map((node) => {
+      const fm = parseFrontmatter(node.markdown);
+      return {
+        placed: false,
+        entry: {
+          node,
+          slide: fm.slide ?? Number.POSITIVE_INFINITY,
+          thumbnail: fm.thumbnail,
+          summary: fm.summary,
+          body: fm.body,
+        },
+      };
+    });
+    return [...placed, ...tray].sort((a, b) => a.entry.slide - b.entry.slide);
+  }, [map]);
+
+  const slides = entries;
+  const ids = useMemo(() => entries.map((x) => x.entry.node.id), [entries]);
+  const trayCount = map.tray.length;
 
   function reorderBefore(moved: string, targetId: string | null) {
     if (!moved) return;
@@ -151,6 +180,21 @@ export function SlidePanel() {
         <span className="text-xs text-neutral-400">{slides.length}</span>
       </div>
 
+      {trayCount > 0 && (
+        <div className="flex items-center justify-between gap-2 border-b border-amber-200 bg-amber-50 px-3 py-1.5">
+          <span className="text-xs text-amber-700">
+            {trayCount} ikke plassert
+          </span>
+          <button
+            onClick={() => dispatch({ type: "PLACE_ALL_FROM_TRAY" })}
+            className="rounded border border-amber-300 bg-white px-2 py-0.5 text-xs text-amber-800 hover:bg-amber-100"
+            title="Legg alle uplasserte slides ut på kartet i et rutenett"
+          >
+            Plasser alle
+          </button>
+        </div>
+      )}
+
       {slides.length === 0 ? (
         <div className="p-4 text-xs text-neutral-400">
           Ingen slides ennå. Lag en slide-boks (S) eller importer en presentasjon.
@@ -169,72 +213,97 @@ export function SlidePanel() {
             setOverId(null);
           }}
         >
-          {slides.map((entry, i) => (
-            <li
-              key={entry.node.id}
-              onDragOver={(e) => {
-                if (!dragId || dragId === entry.node.id) return;
-                e.preventDefault();
-                e.stopPropagation();
-                setOverId(entry.node.id);
-              }}
-              onDrop={(e) => {
-                if (!dragId) return;
-                e.preventDefault();
-                e.stopPropagation();
-                reorderBefore(dragId, entry.node.id);
-                setDragId(null);
-                setOverId(null);
-              }}
-              className={
-                "rounded " +
-                (overId === entry.node.id
-                  ? "ring-2 ring-blue-400 ring-offset-1"
-                  : "")
-              }
-            >
-              <div className="flex items-center gap-1.5">
-                <span
+          {slides.map(({ entry, placed }, i) => {
+            const id = entry.node.id;
+            const onFocus = placed ? () => focusNode(id) : undefined;
+            const titleHint = placed
+              ? "Klikk for å sentrere kartet på denne sliden"
+              : "Ikke plassert — dra ut på kartet for å plassere";
+            return (
+              <li
+                key={id}
+                onDragOver={(e) => {
+                  if (!dragId || dragId === id) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setOverId(id);
+                }}
+                onDrop={(e) => {
+                  if (!dragId) return;
+                  e.preventDefault();
+                  e.stopPropagation();
+                  reorderBefore(dragId, id);
+                  setDragId(null);
+                  setOverId(null);
+                }}
+                className={
+                  "rounded " +
+                  (overId === id ? "ring-2 ring-blue-400 ring-offset-1 " : "") +
+                  (!placed ? "opacity-90" : "")
+                }
+              >
+                <div className="flex items-center gap-1.5">
+                  <span
+                    draggable
+                    onDragStart={(e) => {
+                      e.dataTransfer.setData(SLIDE_DND_MIME, id);
+                      e.dataTransfer.setData("text/plain", id);
+                      e.dataTransfer.effectAllowed = "move";
+                      setDragId(id);
+                    }}
+                    onDragEnd={() => {
+                      setDragId(null);
+                      setOverId(null);
+                    }}
+                    title="Dra for å endre rekkefølge (eller dra ut på kartet)"
+                    className="cursor-grab select-none px-0.5 text-neutral-400 hover:text-neutral-600"
+                  >
+                    ⠿
+                  </span>
+                  <PositionInput
+                    value={i + 1}
+                    max={slides.length}
+                    onCommit={(n) => moveToPosition(id, n)}
+                  />
+                  <button
+                    onClick={onFocus}
+                    className="min-w-0 flex-1 truncate text-left text-xs text-neutral-600 hover:text-neutral-900"
+                    title={titleHint}
+                  >
+                    {entry.thumbnail ??
+                      (Number.isFinite(entry.slide)
+                        ? `Slide ${entry.slide}`
+                        : "Slide")}
+                  </button>
+                  {!placed && (
+                    <span className="shrink-0 rounded bg-amber-100 px-1 py-0.5 text-[10px] font-medium text-amber-700">
+                      ny
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={onFocus}
                   draggable
                   onDragStart={(e) => {
-                    e.dataTransfer.setData(SLIDE_DND_MIME, entry.node.id);
-                    e.dataTransfer.setData("text/plain", entry.node.id);
+                    e.dataTransfer.setData(SLIDE_DND_MIME, id);
+                    e.dataTransfer.setData("text/plain", id);
                     e.dataTransfer.effectAllowed = "move";
-                    setDragId(entry.node.id);
+                    setDragId(id);
                   }}
                   onDragEnd={() => {
                     setDragId(null);
                     setOverId(null);
                   }}
-                  title="Dra for å endre rekkefølge (eller dra ut på kartet)"
-                  className="cursor-grab select-none px-0.5 text-neutral-400 hover:text-neutral-600"
+                  className="group mt-1 block rounded"
+                  title={titleHint}
                 >
-                  ⠿
-                </span>
-                <PositionInput
-                  value={i + 1}
-                  max={slides.length}
-                  onCommit={(n) => moveToPosition(entry.node.id, n)}
-                />
-                <button
-                  onClick={() => focusNode(entry.node.id)}
-                  className="min-w-0 flex-1 truncate text-left text-xs text-neutral-600 hover:text-neutral-900"
-                  title="Klikk for å sentrere kartet på denne sliden"
-                >
-                  {entry.thumbnail ?? `Slide ${entry.slide}`}
+                  <div className="rounded ring-offset-1 group-hover:ring-2 group-hover:ring-blue-400">
+                    <SlidePreview entry={entry} />
+                  </div>
                 </button>
-              </div>
-              <button
-                onClick={() => focusNode(entry.node.id)}
-                className="group mt-1 block rounded"
-                title="Klikk for å sentrere kartet på denne sliden"
-              >
-                <div className="rounded ring-offset-1 group-hover:ring-2 group-hover:ring-blue-400">
-                  <SlidePreview entry={entry} />
-                </div>
-              </button>
-            </li>
-          ))}
+              </li>
+            );
+          })}
         </ol>
       )}
     </aside>

@@ -13,6 +13,7 @@ function stateToFile(state: MapState): MapWiseFile {
     settings: state.settings,
     nodes: state.nodes,
     edges: state.edges,
+    tray: state.tray,
   };
 }
 
@@ -75,6 +76,11 @@ async function inlineImages(file: MapWiseFile): Promise<MapWiseFile> {
       urlSet.add(node.src);
     }
   }
+  for (const node of file.tray ?? []) {
+    for (const m of node.markdown.matchAll(MD_IMG_RE)) {
+      urlSet.add(m[1]);
+    }
+  }
 
   if (urlSet.size === 0) return file;
 
@@ -101,7 +107,15 @@ async function inlineImages(file: MapWiseFile): Promise<MapWiseFile> {
     return node;
   });
 
-  return { ...file, nodes };
+  const tray = (file.tray ?? []).map((node) => {
+    const newMarkdown = node.markdown.replace(
+      MD_IMG_RE,
+      (match, url) => (map.has(url) ? match.replace(url, map.get(url)!) : match),
+    );
+    return newMarkdown === node.markdown ? node : { ...node, markdown: newMarkdown };
+  });
+
+  return { ...file, nodes, tray };
 }
 
 export interface ExportResult {

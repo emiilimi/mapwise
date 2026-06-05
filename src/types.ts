@@ -6,6 +6,9 @@ export interface MapWiseFile {
   settings: MapSettings;
   nodes: AnyNode[];
   edges: Arrow[];
+  // Uplasserte slides (venteliste/tray) — vises i sidebaren men er ikke på
+  // kartet ennå. Valgfri for bakoverkompatibilitet med eldre filer.
+  tray?: SlideNode[];
 }
 
 export interface ImageNode {
