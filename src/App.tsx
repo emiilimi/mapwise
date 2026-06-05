@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import { importFromHtml } from "./lib/importHtml";
+import { importFromPptx } from "./lib/importPptx";
 import { Canvas } from "./canvas/Canvas";
 import { StoreProvider, useStore } from "./state/store";
 import { ToolProvider } from "./hooks/useTool";
@@ -77,8 +78,13 @@ function Shell() {
     e.target.value = ""; // tillat samme fil igjen senere
     if (!file) return;
     try {
-      const text = await file.text();
-      const parsed = await importFromHtml(text);
+      const isPptx =
+        /\.pptx$/i.test(file.name) ||
+        file.type ===
+          "application/vnd.openxmlformats-officedocument.presentationml.presentation";
+      const parsed = isPptx
+        ? await importFromPptx(await file.arrayBuffer())
+        : await importFromHtml(await file.text());
       dispatch({ type: "REPLACE_ALL", file: parsed });
     } catch (err) {
       alert("Klarte ikke å åpne filen: " + (err as Error).message);
@@ -103,7 +109,7 @@ function Shell() {
       <input
         ref={fileInputRef}
         type="file"
-        accept=".html,text/html"
+        accept=".html,text/html,.pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation"
         onChange={onFileSelected}
         className="hidden"
       />

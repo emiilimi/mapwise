@@ -85,7 +85,7 @@ export function Toolbar({
       <div className="ml-auto flex items-center gap-1">
         <ToolButton icon="▶" label="Presenter" onClick={onPresent} title="Åpne presentasjonsmodus" />
         <ToolButton icon="⤓" label="Eksport" onClick={onExport} title="Eksporter til HTML" />
-        <ToolButton icon="📂" label="Åpne" onClick={onOpenFile} title="Importer fra HTML" />
+        <ToolButton icon="📂" label="Åpne" onClick={onOpenFile} title="Importer fra HTML eller PowerPoint (.pptx)" />
         <ToolButton icon="⚙" label="Innst." onClick={onOpenSettings} />
         <ToolButton icon="?" label="Hjelp" shortcut="?" onClick={toggleShortcuts} />
       </div>
