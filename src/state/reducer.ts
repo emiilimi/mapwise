@@ -7,6 +7,7 @@ import {
   type MapSettings,
   type MapWiseFile,
 } from "../types";
+import { setSlideNumber } from "../lib/frontmatter";
 
 export interface MapState {
   version: string;
@@ -41,6 +42,7 @@ export type MapAction =
   | { type: "ADD_EDGE"; edge: Arrow }
   | { type: "DELETE_EDGES"; ids: string[] }
   | { type: "UPDATE_SETTINGS"; patch: Partial<MapSettings> }
+  | { type: "REORDER_SLIDES"; order: string[] }
   | { type: "REPLACE_ALL"; file: MapWiseFile };
 
 // Pure reducer. Ingen side-effects, ingen identitets-hacks — undo/redo i history.ts
@@ -138,6 +140,24 @@ export function mapReducer(state: MapState, action: MapAction): MapState {
         }
       }
       return { ...state, settings: newSettings, nodes };
+    }
+
+    case "REORDER_SLIDES": {
+      // Tildel slide-nummer 1..N etter ny rekkefølge. Ider som ikke er med i
+      // `order` beholder sin markdown/`slide` urørt.
+      const orderMap = new Map(action.order.map((id, i) => [id, i + 1]));
+      if (orderMap.size === 0) return state;
+      return {
+        ...state,
+        nodes: state.nodes.map((n) => {
+          const num = orderMap.get(n.id);
+          if (num === undefined) return n;
+          if (n.type === "slide")
+            return { ...n, markdown: setSlideNumber(n.markdown, num) };
+          if (n.type === "image") return { ...n, slide: num };
+          return n;
+        }),
+      };
     }
 
     case "REPLACE_ALL":

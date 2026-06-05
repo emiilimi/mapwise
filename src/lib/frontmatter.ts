@@ -112,3 +112,21 @@ export function parseFrontmatter(markdown: string): ParsedFrontmatter {
 
   return { slide, thumbnail, summary, textSize, fixedForm, body };
 }
+
+// Setter (eller setter inn) `slide:`-feltet i en markdown-streng uten å røre
+// resten av frontmatter eller body. Brukes ved omrokkering/renummerering fra
+// slide-sidebaren. Mangler frontmatter, settes en ny blokk inn øverst.
+const SLIDE_LINE_RE = /^[ \t]*slide[ \t]*:.*$/m;
+
+export function setSlideNumber(markdown: string, n: number): string {
+  const match = FRONTMATTER_RE.exec(markdown);
+  if (!match) {
+    return `---\nslide: ${n}\n---\n\n${markdown}`;
+  }
+  const fmBody = match[1];
+  const rest = markdown.slice(match[0].length);
+  const newFmBody = SLIDE_LINE_RE.test(fmBody)
+    ? fmBody.replace(SLIDE_LINE_RE, `slide: ${n}`)
+    : `slide: ${n}\n${fmBody}`;
+  return `---\n${newFmBody}\n---\n${rest}`;
+}
