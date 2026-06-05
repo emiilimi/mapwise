@@ -27,7 +27,7 @@ import { DEFAULT_SLIDE_MARKDOWN, DEFAULT_SLIDE_SIZE, DEFAULT_TEXT_SIZE, parseAsp
 function CanvasInner() {
   const map = useMap();
   const { dispatch } = useStore();
-  const { tool, setTool, openEditor } = useTool();
+  const { tool, setTool, openEditor, focusNodeId, focusNonce } = useTool();
   const rf = useReactFlow();
 
   // Pilmodus: id-en til kilde-noden mens vi venter på mål-klikket.
@@ -53,6 +53,12 @@ function CanvasInner() {
     const timer = setTimeout(() => rf.fitView({ duration: 400 }), 60);
     return () => clearTimeout(timer);
   }, [importedAt, rf]);
+
+  // Fokus-signal fra slide-sidebar: sentrer viewport på valgt node.
+  useEffect(() => {
+    if (!focusNodeId) return;
+    rf.fitView({ nodes: [{ id: focusNodeId }], duration: 400, maxZoom: 1.2 });
+  }, [focusNodeId, focusNonce, rf]);
 
   const nodes = useMemo<Node[]>(
     () =>

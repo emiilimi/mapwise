@@ -17,7 +17,7 @@ export function Toolbar({
   onExport,
   onOpenFile,
 }: Props) {
-  const { tool, setTool, toggleShortcuts } = useTool();
+  const { tool, setTool, toggleShortcuts, showSidebar, toggleSidebar } = useTool();
   const { undo, redo, canUndo, canRedo } = useStore();
 
   return (
@@ -26,6 +26,16 @@ export function Toolbar({
         <span className="text-base font-semibold leading-none">MapWise</span>
         <span className="text-[10px] text-neutral-400">redigerer</span>
       </div>
+
+      <ToolButton
+        icon={showSidebar ? "‹" : "›"}
+        label="Slides"
+        active={showSidebar}
+        onClick={toggleSidebar}
+        title="Vis/skjul slide-panel"
+      />
+
+      <div className="mx-2 h-10 w-px bg-neutral-200" />
 
       <ToolButton
         icon="▣"

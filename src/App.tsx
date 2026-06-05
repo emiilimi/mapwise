@@ -10,6 +10,7 @@ import { NodeEditor } from "./modals/NodeEditor";
 import { SettingsPanel } from "./modals/SettingsPanel";
 import { ExportDialog } from "./modals/ExportDialog";
 import { PresentMode } from "./present/PresentMode";
+import { SlidePanel, SidebarToggle } from "./sidebar/SlidePanel";
 import { useTool } from "./hooks/useTool";
 import { newId } from "./lib/id";
 import { DEFAULT_SLIDE_SIZE } from "./types";
@@ -67,7 +68,7 @@ function useSeed() {
 function Shell() {
   useSeed();
   useKeyboard();
-  const { openSettings, openPresent, openExport } = useTool();
+  const { openSettings, openPresent, openExport, showSidebar } = useTool();
   const { dispatch } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,8 +93,12 @@ function Shell() {
         onExport={openExport}
         onOpenFile={() => fileInputRef.current?.click()}
       />
-      <div className="flex-1">
-        <Canvas />
+      <div className="flex min-h-0 flex-1">
+        {showSidebar && <SlidePanel />}
+        <div className="relative min-w-0 flex-1">
+          <SidebarToggle />
+          <Canvas />
+        </div>
       </div>
       <input
         ref={fileInputRef}

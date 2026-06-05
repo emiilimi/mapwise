@@ -30,6 +30,14 @@ interface ToolContextValue {
   showExport: boolean;
   openExport: () => void;
   closeExport: () => void;
+  // Slide-sidebar (gjelder alle kart).
+  showSidebar: boolean;
+  toggleSidebar: () => void;
+  // Fokus-signal fra sidebar → Canvas sentrerer på noden. Inkrementeres for å
+  // trigge re-fokus selv om samme node velges to ganger på rad.
+  focusNodeId: string | null;
+  focusNonce: number;
+  focusNode: (id: string) => void;
 }
 
 const ToolContext = createContext<ToolContextValue | null>(null);
@@ -41,6 +49,11 @@ export function ToolProvider({ children }: { children: ReactNode }) {
   const [showSettings, setShowSettings] = useState(false);
   const [presentMode, setPresentMode] = useState<PresentMode>("off");
   const [showExport, setShowExport] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [focus, setFocus] = useState<{ id: string | null; nonce: number }>({
+    id: null,
+    nonce: 0,
+  });
 
   const toggleShortcuts = useCallback(() => setShowShortcuts((v) => !v), []);
   const closeShortcuts = useCallback(() => setShowShortcuts(false), []);
@@ -55,6 +68,11 @@ export function ToolProvider({ children }: { children: ReactNode }) {
   const closePresent = useCallback(() => setPresentMode("off"), []);
   const openExport = useCallback(() => setShowExport(true), []);
   const closeExport = useCallback(() => setShowExport(false), []);
+  const toggleSidebar = useCallback(() => setShowSidebar((v) => !v), []);
+  const focusNode = useCallback(
+    (id: string) => setFocus((f) => ({ id, nonce: f.nonce + 1 })),
+    [],
+  );
 
   const value = useMemo<ToolContextValue>(
     () => ({
@@ -76,6 +94,11 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       showExport,
       openExport,
       closeExport,
+      showSidebar,
+      toggleSidebar,
+      focusNodeId: focus.id,
+      focusNonce: focus.nonce,
+      focusNode,
     }),
     [
       tool,
@@ -94,6 +117,10 @@ export function ToolProvider({ children }: { children: ReactNode }) {
       showExport,
       openExport,
       closeExport,
+      showSidebar,
+      toggleSidebar,
+      focus,
+      focusNode,
     ],
   );
 
