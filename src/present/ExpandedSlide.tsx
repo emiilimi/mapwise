@@ -1,9 +1,6 @@
 import { useMemo, useRef } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { parseFrontmatter } from "../lib/frontmatter";
-import { markdownComponents } from "../lib/markdownComponents";
+import { SafeMarkdown } from "../lib/SafeMarkdown";
 import { useFitText } from "../lib/useFitText";
 import { extractPositionedImages, stripPositionSyntax } from "../lib/positionedImages";
 import { splitSteps } from "./stepSplitter";
@@ -160,7 +157,7 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
                 ref={fitRef}
                 className="markdown-body relative h-full w-full overflow-hidden p-8 leading-snug"
               >
-                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{body}</ReactMarkdown>
+                <SafeMarkdown>{body}</SafeMarkdown>
                 {positionedImages.map((img, i) => (
                   <img
                     key={i}
@@ -182,7 +179,7 @@ export function ExpandedSlide({ slideId, onClose }: Props) {
           </div>
         ) : (
           <div className="markdown-body flex-1 overflow-auto p-8 text-base leading-relaxed">
-            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{body}</ReactMarkdown>
+            <SafeMarkdown>{body}</SafeMarkdown>
           </div>
         )}
         {showSummary && !summaryAtTop && (

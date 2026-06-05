@@ -1,12 +1,9 @@
 import { memo, useMemo, useRef } from "react";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, NodeResizer, Position, type Node } from "@xyflow/react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import type { TextNode as TextNodeData } from "../types";
 import { DEFAULT_TEXT_SIZE } from "../types";
-import { markdownComponents } from "../lib/markdownComponents";
+import { SafeMarkdown } from "../lib/SafeMarkdown";
 import { useShiftResize } from "../lib/useShiftResize";
 import { useMap, useStore } from "../state/store";
 
@@ -46,9 +43,7 @@ function TextNodeImpl({ id, data, selected, width, height }: NodeProps<TextFlowN
       />
       <Handle type="target" position={Position.Top} className="!bg-neutral-400" />
       <div className="markdown-body h-full w-full overflow-hidden p-3 text-sm leading-snug">
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>
-          {data.content}
-        </ReactMarkdown>
+        <SafeMarkdown>{data.content}</SafeMarkdown>
       </div>
       <Handle type="source" position={Position.Bottom} className="!bg-neutral-400" />
     </div>

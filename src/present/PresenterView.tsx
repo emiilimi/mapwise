@@ -1,9 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { parseFrontmatter } from "../lib/frontmatter";
-import { markdownComponents } from "../lib/markdownComponents";
+import { SafeMarkdown } from "../lib/SafeMarkdown";
 import { useFitText } from "../lib/useFitText";
 import { extractPositionedImages, stripPositionSyntax } from "../lib/positionedImages";
 import { useMap } from "../state/store";
@@ -169,7 +166,7 @@ export function PresenterView() {
                     }}
                     aria-hidden={i > step}
                   >
-                    <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{seg}</ReactMarkdown>
+                    <SafeMarkdown>{seg}</SafeMarkdown>
                   </div>
                 ))}
                 {positionedImages.map((img, i) => (
@@ -204,7 +201,7 @@ export function PresenterView() {
                   }}
                   aria-hidden={i > step}
                 >
-                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{seg}</ReactMarkdown>
+                  <SafeMarkdown>{seg}</SafeMarkdown>
                 </div>
               ))}
             </div>

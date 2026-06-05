@@ -7,13 +7,10 @@ import {
   useStore as useRfStore,
   type Node,
 } from "@xyflow/react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-import rehypeRaw from "rehype-raw";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 import { useFitText } from "../lib/useFitText";
 import { useShiftResize } from "../lib/useShiftResize";
-import { markdownComponents } from "../lib/markdownComponents";
+import { SafeMarkdown } from "../lib/SafeMarkdown";
 import { extractPositionedImages, stripPositionSyntax } from "../lib/positionedImages";
 import { splitSteps } from "../present/stepSplitter";
 import { useMap, useStore } from "../state/store";
@@ -195,7 +192,7 @@ function SlideNodeImpl({
             {summary}
           </p>
         )}
-        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]} components={markdownComponents}>{body}</ReactMarkdown>
+        <SafeMarkdown>{body}</SafeMarkdown>
       </div>
 
       {/* Posisjonerte bilder (fixedForm). Rendres som overlay over markdown. */}
