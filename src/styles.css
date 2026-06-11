@@ -13,6 +13,14 @@
 .markdown-body pre  { background: #f3f4f6; padding: 0.5em; border-radius: 0.375em; overflow-x: auto; font-size: 0.85em; }
 .markdown-body a    { color: #2563eb; text-decoration: underline; }
 .markdown-body hr   { border: none; border-top: 1px solid #e5e7eb; margin: 0.5em 0; }
+/* Bilder må aldri sprenge boksen: uten max-width rendres de i naturlig
+   størrelse og auto-fit (useFitText) finner aldri en font som passer →
+   teksten låses til minimum (mikroskopisk). Em-basert max-height gjør at
+   bildene skalerer MED fonten, så fitteren kan balansere tekst + bilde. */
+/* 65vh-grensen hindrer at et bredt bilde (høyde låst av bredden, ikke
+   fonten) spiser hele høyden i presentasjonsmodus og tvinger teksten ned
+   til minimum. */
+.markdown-body img { max-width: 100%; max-height: min(22em, 65vh); height: auto; }
 .markdown-body table { border-collapse: collapse; margin: 0.5em 0; font-size: 0.9em; }
 .markdown-body th, .markdown-body td { border: 1px solid #d4d4d4; padding: 0.25em 0.6em; text-align: left; vertical-align: top; }
 .markdown-body th { background: #f5f5f5; font-weight: 600; }

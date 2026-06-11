@@ -41,6 +41,7 @@ const FRONTMATTER = `---
 slide: 1
 thumbnail: Kort tittel
 summary: Sammendrag
+textSize: 9
 fixedForm: true
 ---`;
 
@@ -113,7 +114,9 @@ export function ShortcutsHelp() {
           </pre>
           <p className="mt-1 text-xs text-neutral-400">
             <code>slide:</code> bestemmer presentasjonsrekkefølge (støtter desimaler) ·{" "}
-            <code>fixedForm:</code> overstyrer kart-innstillingen per slide
+            <code>textSize:</code> skriftstørrelse i px på kartet (kun fri form — i fast
+            form auto-tilpasses teksten) · <code>fixedForm:</code> overstyrer
+            kart-innstillingen per slide
           </p>
         </Section>
       </div>

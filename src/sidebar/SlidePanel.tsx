@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { useMap, useStore } from "../state/store";
 import { useTool } from "../hooks/useTool";
 import { getOrderedSlides, type OrderedSlide } from "../present/slideOrder";
 import { splitSteps } from "../present/stepSplitter";
 import { stripPositionSyntax } from "../lib/positionedImages";
 import { SafeMarkdown } from "../lib/SafeMarkdown";
+import { useFitText } from "../lib/useFitText";
 import { DEFAULT_SLIDE_TEXT_SIZE, parseFrontmatter } from "../lib/frontmatter";
 
 const PREVIEW_W = 200;
@@ -27,56 +28,80 @@ export function SidebarToggle() {
   );
 }
 
-function SlidePreview({ entry }: { entry: OrderedSlide }) {
-  const { node } = entry;
-  // Hooks må kjøre ubetinget før eventuelle tidlige returns.
-  const previewBody = useMemo(
-    () => stripPositionSyntax(splitSteps(entry.body).join("\n\n")),
-    [entry.body],
-  );
+// Memoisert på node-identitet: reduceren beholder objekt-identiteten til
+// noder som ikke endres, så previews re-parser ikke markdown for hver
+// kartendring (f.eks. per frame under resize av en annen node).
+const SlidePreview = memo(
+  function SlidePreview({
+    entry,
+    fixedFormDefault,
+  }: {
+    entry: OrderedSlide;
+    fixedFormDefault: boolean;
+  }) {
+    const { node } = entry;
+    // Hooks må kjøre ubetinget før eventuelle tidlige returns.
+    const previewBody = useMemo(
+      () => stripPositionSyntax(splitSteps(entry.body).join("\n\n")),
+      [entry.body],
+    );
+    // Samme font-logikk som SlideNode på kartet: fast form → auto-fit
+    // (4–48 px), fri form → textSize ?? default. Uten dette ble previews av
+    // fast form-slides (f.eks. all pptx-import) uleselig små.
+    const effectiveFixed = entry.fixedForm ?? fixedFormDefault;
+    const fitRef = useRef<HTMLDivElement>(null);
+    useFitText(fitRef, previewBody, node.type === "slide" && effectiveFixed);
 
-  if (node.type === "image") {
-    const ratio = node.size.height / node.size.width || 0.625;
+    if (node.type === "image") {
+      const ratio = node.size.height / node.size.width || 0.625;
+      return (
+        <div
+          className="overflow-hidden rounded border border-neutral-200 bg-white"
+          style={{ width: PREVIEW_W, height: PREVIEW_W * ratio }}
+        >
+          <img
+            src={node.src}
+            alt={node.alt ?? ""}
+            className="h-full w-full object-contain"
+            draggable={false}
+          />
+        </div>
+      );
+    }
+
+    // Slide-node: skaler ned en full-størrelse render til preview-bredden.
+    const w = node.size.width;
+    const h = node.size.height;
+    const scale = PREVIEW_W / w;
     return (
       <div
-        className="overflow-hidden rounded border border-neutral-200 bg-white"
-        style={{ width: PREVIEW_W, height: PREVIEW_W * ratio }}
+        className="relative overflow-hidden rounded border border-neutral-200 bg-white"
+        style={{ width: PREVIEW_W, height: h * scale }}
       >
-        <img
-          src={node.src}
-          alt={node.alt ?? ""}
-          className="h-full w-full object-contain"
-          draggable={false}
-        />
+        <div
+          ref={fitRef}
+          className="markdown-body absolute inset-0 overflow-hidden p-3 leading-snug"
+          style={{
+            width: w,
+            height: h,
+            transform: `scale(${scale})`,
+            transformOrigin: "top left",
+            // I fast form styrer useFitText font-size imperativt.
+            fontSize: effectiveFixed
+              ? undefined
+              : `${entry.textSize ?? DEFAULT_SLIDE_TEXT_SIZE}px`,
+            pointerEvents: "none",
+          }}
+        >
+          <SafeMarkdown>{previewBody}</SafeMarkdown>
+        </div>
       </div>
     );
-  }
-
-  // Slide-node: skaler ned en full-størrelse render til preview-bredden.
-  const w = node.size.width;
-  const h = node.size.height;
-  const scale = PREVIEW_W / w;
-  return (
-    <div
-      className="relative overflow-hidden rounded border border-neutral-200 bg-white"
-      style={{ width: PREVIEW_W, height: h * scale }}
-    >
-      <div
-        className="markdown-body absolute inset-0 overflow-hidden p-3 leading-snug"
-        style={{
-          width: w,
-          height: h,
-          transform: `scale(${scale})`,
-          transformOrigin: "top left",
-          fontSize: `${DEFAULT_SLIDE_TEXT_SIZE}px`,
-          pointerEvents: "none",
-        }}
-      >
-        <SafeMarkdown>{previewBody}</SafeMarkdown>
-      </div>
-    </div>
-  );
-}
+  },
+  (prev, next) =>
+    prev.entry.node === next.entry.node &&
+    prev.fixedFormDefault === next.fixedFormDefault,
+);
 
 // Liten nummer-input som committer på Enter/blur. Stopper drag/klikk fra å
 // boble til rad-knappen.
@@ -148,6 +173,8 @@ export function SlidePanel() {
           thumbnail: fm.thumbnail,
           summary: fm.summary,
           body: fm.body,
+          textSize: fm.textSize,
+          fixedForm: fm.fixedForm,
         },
       };
     });
@@ -300,7 +327,7 @@ export function SlidePanel() {
                   title={titleHint}
                 >
                   <div className="rounded ring-offset-1 group-hover:ring-2 group-hover:ring-blue-400">
-                    <SlidePreview entry={entry} />
+                    <SlidePreview entry={entry} fixedFormDefault={map.settings.fixedForm} />
                   </div>
                 </button>
               </li>
