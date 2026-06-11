@@ -184,7 +184,9 @@ function CanvasInner() {
       }
       setTool("select");
     },
-    [tool, arrowSource, rf, dispatch, setTool],
+    // settings-feltene MÅ være med: uten dem plasseres nye slides med stale
+    // fixedForm/aspectRatio etter at innstillingen endres.
+    [tool, arrowSource, rf, dispatch, setTool, map.settings.fixedForm, map.settings.aspectRatio],
   );
 
   const onNodeClick = useCallback(

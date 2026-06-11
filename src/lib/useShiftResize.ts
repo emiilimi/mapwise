@@ -44,6 +44,10 @@ export function useShiftResize(
       const startY = latest.current.position.y;
       const startW = latest.current.size.width;
       const startH = latest.current.size.height;
+      // Render-skala (zoom): DOM-rect er flow-størrelsen ganget med zoom.
+      // Skjerm-deltaer må deles på denne, ellers resizer boksen feil
+      // hastighet ved zoom ≠ 1.
+      const renderScale = startW > 0 ? rect.width / startW : 1;
 
       let activated = false;
       let rafId = 0;
@@ -108,8 +112,8 @@ export function useShiftResize(
           if (Math.abs(dx) < MOVE_THRESHOLD && Math.abs(dy) < MOVE_THRESHOLD) return;
           activated = true;
         }
-        pendingDx = dx;
-        pendingDy = dy;
+        pendingDx = dx / renderScale;
+        pendingDy = dy / renderScale;
         if (rafId === 0) {
           rafId = requestAnimationFrame(commit);
         }
