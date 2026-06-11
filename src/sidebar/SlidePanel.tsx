@@ -237,7 +237,9 @@ export function SlidePanel() {
                   setOverId(null);
                 }}
                 className={
-                  "rounded " +
+                  // content-visibility: rader utenfor scrollporten layoutes/
+                  // paintes ikke — viktig for store, bildetunge kart.
+                  "rounded [content-visibility:auto] [contain-intrinsic-size:auto_170px] " +
                   (overId === id ? "ring-2 ring-blue-400 ring-offset-1 " : "") +
                   (!placed ? "opacity-90" : "")
                 }

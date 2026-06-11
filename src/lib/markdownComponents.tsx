@@ -10,6 +10,9 @@ export const markdownComponents: Components = {
       {children}
     </a>
   ),
+  // Lazy dekoding/lasting: bildetunge kart (mange base64-bilder) skal ikke
+  // dekode alt synkront ved første render.
+  img: (props) => <img loading="lazy" decoding="async" {...props} />,
 };
 
 // react-markdown v9 saniterer URL-er via `defaultUrlTransform`, som bare

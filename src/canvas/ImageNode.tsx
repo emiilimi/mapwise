@@ -74,6 +74,8 @@ function ImageNodeImpl({ id, data, selected, width, height }: NodeProps<ImageFlo
           alt={data.alt ?? ""}
           className="h-full w-full object-contain"
           draggable={false}
+          loading="lazy"
+          decoding="async"
         />
       ) : (
         <div className="flex h-full w-full items-center justify-center text-sm text-neutral-400">

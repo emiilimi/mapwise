@@ -46,6 +46,19 @@ export function useFitText(
     fit();
     const ro = new ResizeObserver(() => fit());
     ro.observe(el);
-    return () => ro.disconnect();
+
+    // Bilder laster asynkront (og lazy) — scrollHeight endrer seg når de
+    // dukker opp uten at containerens størrelse gjør det, så ResizeObserver
+    // fanger det ikke. Re-fit ved hver img-load. `capture` fordi load-events
+    // ikke bobler.
+    const onImgLoad = (e: Event) => {
+      if (e.target instanceof HTMLImageElement) fit();
+    };
+    el.addEventListener("load", onImgLoad, true);
+
+    return () => {
+      ro.disconnect();
+      el.removeEventListener("load", onImgLoad, true);
+    };
   }, [ref, body, enabled, min, max]);
 }
