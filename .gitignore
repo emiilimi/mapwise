@@ -2,6 +2,9 @@ node_modules
 dist
 dist-ssr
 
+# Lokal Claude Code-konfig (preview-launcher m.m.)
+.claude/
+
 # Output fra build:viewer — bygges på nytt ved hver build
 public/mapshow-viewer.js
 public/mapshow-viewer.css

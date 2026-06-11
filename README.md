@@ -77,12 +77,9 @@ PowerPoint/Google Slides.
 
 ## Eksport
 
-| Modus | Beskrivelse |
-|---|---|
-| **Selvinneholdt** | Én `.html`-fil med alle bilder inlinet som base64. Fungerer offline. |
-| **Kompakt** | `mapwise.html` + separate `mapshow-viewer.js` / `.css`. Lettere fil, krever at de tre filene ligger samlet. |
-
-Eksporterte filer kan importeres tilbake i editoren.
+Eksport lager én **selvinneholdt `.html`-fil** med viewer og alle bilder
+inlinet som base64 — fungerer offline og kan deles som én fil. Eksporterte
+filer kan importeres tilbake i editoren.
 
 ## Lagring
 
@@ -110,8 +107,8 @@ corepack pnpm build:viewer # bygg viewer-bundle separat
 | `V` | Velg / flytt |
 | `S` | Ny slide-boks |
 | `T` | Nytt tekstnotat |
-| `I` | Ny bildenode |
-| `A` | Pilmodus |
+| `B` | Ny bildenode |
+| `P` | Pilmodus |
 | `Ctrl+Z` / `Ctrl+Shift+Z` | Angre / gjør om |
 | `Delete` / `Backspace` | Slett valgte |
 | `Escape` | Tilbake til velg-modus |

@@ -150,38 +150,6 @@ export async function exportSelfContained(
   };
 }
 
-export async function exportCompact(state: MapState): Promise<ExportResult> {
-  const file = stateToFile(state);
-  const { js, css } = await loadViewerAssets();
-  const html = `<!doctype html>
-<html lang="nb">
-<head>
-<meta charset="utf-8">
-<title>MapWise</title>
-<style>${BASE_STYLE}</style>
-<link rel="stylesheet" href="mapshow-viewer.css">
-</head>
-<body>
-<div id="root"></div>
-<script type="application/json" id="mapshow-data">${safeJson(file)}</script>
-<script src="mapshow-viewer.js"></script>
-</body>
-</html>`;
-  return {
-    files: [
-      { name: "mapwise.html", blob: new Blob([html], { type: "text/html" }) },
-      {
-        name: "mapshow-viewer.js",
-        blob: new Blob([js], { type: "application/javascript" }),
-      },
-      {
-        name: "mapshow-viewer.css",
-        blob: new Blob([css], { type: "text/css" }),
-      },
-    ],
-  };
-}
-
 // Trigger nedlasting via skjult <a download>. Sekvensiell — ikke parallell —
 // fordi noen nettlesere strupes hvis flere downloads fyres i samme tick.
 export function downloadFiles(files: ExportResult["files"]) {
