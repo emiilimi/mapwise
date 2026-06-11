@@ -1,6 +1,5 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { importFromHtml } from "./lib/importHtml";
-import { importFromPptx } from "./lib/importPptx";
 import { Canvas } from "./canvas/Canvas";
 import { StoreProvider, useStore } from "./state/store";
 import { ToolProvider } from "./hooks/useTool";
@@ -72,6 +71,8 @@ function Shell() {
   const { openSettings, openPresent, openExport, showSidebar } = useTool();
   const { dispatch } = useStore();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // null = ingen import pågår. total=0 → «forbereder» (zip lastes/parses).
+  const [importing, setImporting] = useState<{ done: number; total: number } | null>(null);
 
   async function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -82,12 +83,23 @@ function Shell() {
         /\.pptx$/i.test(file.name) ||
         file.type ===
           "application/vnd.openxmlformats-officedocument.presentationml.presentation";
-      const parsed = isPptx
-        ? await importFromPptx(await file.arrayBuffer())
-        : await importFromHtml(await file.text());
+      let parsed;
+      if (isPptx) {
+        setImporting({ done: 0, total: 0 });
+        // Dynamisk import: jszip + parseren holdes ute av hovedbundelen og
+        // lastes først når noen faktisk åpner en .pptx.
+        const { importFromPptx } = await import("./lib/importPptx");
+        parsed = await importFromPptx(await file.arrayBuffer(), (done, total) =>
+          setImporting({ done, total }),
+        );
+      } else {
+        parsed = await importFromHtml(await file.text());
+      }
       dispatch({ type: "REPLACE_ALL", file: parsed });
     } catch (err) {
       alert("Klarte ikke å åpne filen: " + (err as Error).message);
+    } finally {
+      setImporting(null);
     }
   }
 
@@ -118,6 +130,18 @@ function Shell() {
       <SettingsPanel />
       <ExportDialog />
       <PresentMode />
+      {importing && (
+        <div className="fixed inset-0 z-[10001] flex items-center justify-center bg-black/40">
+          <div className="flex flex-col items-center gap-3 rounded-lg bg-white px-8 py-6 shadow-xl">
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            <p className="text-sm text-neutral-700">
+              {importing.total === 0
+                ? "Leser presentasjonen …"
+                : `Importerer lysbilde ${importing.done}/${importing.total} …`}
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

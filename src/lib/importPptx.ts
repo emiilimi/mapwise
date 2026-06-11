@@ -6,10 +6,20 @@ import { newId } from "./id";
 // (tittel + avsnitt) og innebygde bilder per lysbilde. Resultatet er
 // *redigerbare* markdown-slides — ikke pikseltro gjengivelse. Slidene legges i
 // `tray` (uplassert); brukeren drar dem ut på kartet.
+//
+// Bilder nedskaleres og rekomprimeres ved import (maks 1600 px, JPEG/PNG).
+// Uten dette blir base64-markdown for store deck titalls MB og fryser
+// rendringen. Identiske media-filer deles på tvers av slides via cache.
 
 const R_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships";
 
+// Maks bildedimensjon etter import. 1600 px holder for fullskjerm-visning.
+const MAX_IMAGE_DIM = 1600;
+const JPEG_QUALITY = 0.82;
+
 class PptxError extends Error {}
+
+export type PptxProgress = (done: number, total: number) => void;
 
 function parseXml(xml: string): Document {
   const doc = new DOMParser().parseFromString(xml, "application/xml");
@@ -57,6 +67,66 @@ const MIME_BY_EXT: Record<string, string> = {
   svg: "image/svg+xml",
 };
 
+function blobToDataUri(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
+function canvasToBlob(
+  canvas: HTMLCanvasElement,
+  mime: string,
+  quality?: number,
+): Promise<Blob | null> {
+  return new Promise((resolve) => canvas.toBlob(resolve, mime, quality));
+}
+
+// Sjekk om bitmapet har (delvis) gjennomsiktige piksler. Sampler hver 8. piksel
+// — godt nok til å avgjøre PNG-vs-JPEG, og raskt selv på store bilder.
+function hasAlpha(ctx: CanvasRenderingContext2D, w: number, h: number): boolean {
+  const data = ctx.getImageData(0, 0, w, h).data;
+  for (let i = 3; i < data.length; i += 32) {
+    if (data[i] < 255) return true;
+  }
+  return false;
+}
+
+// Nedskaler + rekomprimer ett bilde. Returnerer alltid en data-URI — faller
+// tilbake på rå original hvis dekoding/enkoding feiler, og beholder originalen
+// hvis den faktisk er mindre enn det rekomprimerte resultatet.
+async function compressImage(raw: Blob, mime: string): Promise<string> {
+  // SVG er vektor (lite + skalerbart), GIF kan være animert — behold som-er.
+  if (mime === "image/svg+xml" || mime === "image/gif") {
+    return blobToDataUri(raw);
+  }
+  try {
+    const bitmap = await createImageBitmap(raw);
+    const scale = Math.min(1, MAX_IMAGE_DIM / Math.max(bitmap.width, bitmap.height));
+    const w = Math.max(1, Math.round(bitmap.width * scale));
+    const h = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return blobToDataUri(raw);
+    ctx.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+
+    // Transparens må bevares som PNG; ellers gir JPEG langt mindre filer.
+    const keepAlpha = mime === "image/png" && hasAlpha(ctx, w, h);
+    const out = keepAlpha
+      ? await canvasToBlob(canvas, "image/png")
+      : await canvasToBlob(canvas, "image/jpeg", JPEG_QUALITY);
+    if (!out || out.size >= raw.size) return blobToDataUri(raw);
+    return blobToDataUri(out);
+  } catch {
+    return blobToDataUri(raw);
+  }
+}
+
 function reduceRatio(cx: number, cy: number): string {
   const gcd = (a: number, b: number): number => (b === 0 ? a : gcd(b, a % b));
   const g = gcd(cx, cy) || 1;
@@ -103,6 +173,8 @@ function parseSlideText(slideDoc: Document): SlideContent {
 async function slideImages(
   zip: JSZip,
   slidePath: string,
+  slideDoc: Document,
+  mediaCache: Map<string, Promise<string | null>>,
 ): Promise<string[]> {
   // slidePath: "ppt/slides/slideN.xml" → rels: "ppt/slides/_rels/slideN.xml.rels"
   const dir = slidePath.slice(0, slidePath.lastIndexOf("/") + 1);
@@ -112,20 +184,32 @@ async function slideImages(
   if (!relsFile) return [];
   const rels = parseRels(await relsFile.async("text"), dir);
 
-  const slideDoc = parseXml(await zip.file(slidePath)!.async("text"));
   const dataUris: string[] = [];
+  const seenInSlide = new Set<string>();
   for (const blip of Array.from(slideDoc.getElementsByTagNameNS("*", "blip"))) {
     const rid = relAttr(blip, "embed");
     if (!rid) continue;
     const mediaPath = rels.get(rid);
-    if (!mediaPath) continue;
-    const ext = mediaPath.slice(mediaPath.lastIndexOf(".") + 1).toLowerCase();
-    const mime = MIME_BY_EXT[ext];
-    if (!mime) continue; // emf/wmf/tiff o.l. kan ikke vises i nettleser — hopp over
-    const mediaFile = zip.file(mediaPath);
-    if (!mediaFile) continue;
-    const b64 = await mediaFile.async("base64");
-    dataUris.push(`data:${mime};base64,${b64}`);
+    if (!mediaPath || seenInSlide.has(mediaPath)) continue;
+    seenInSlide.add(mediaPath);
+
+    // Cache per media-fil: samme bilde gjenbrukt på flere slides komprimeres
+    // bare én gang, og data-URI-strengen deles (samme JS-streng i minnet).
+    let promise = mediaCache.get(mediaPath);
+    if (!promise) {
+      promise = (async () => {
+        const ext = mediaPath.slice(mediaPath.lastIndexOf(".") + 1).toLowerCase();
+        const mime = MIME_BY_EXT[ext];
+        if (!mime) return null; // emf/wmf/tiff o.l. kan ikke vises i nettleser
+        const mediaFile = zip.file(mediaPath);
+        if (!mediaFile) return null;
+        const raw = await mediaFile.async("blob");
+        return compressImage(raw.type ? raw : raw.slice(0, raw.size, mime), mime);
+      })();
+      mediaCache.set(mediaPath, promise);
+    }
+    const uri = await promise;
+    if (uri) dataUris.push(uri);
   }
   return dataUris;
 }
@@ -157,7 +241,10 @@ function buildMarkdown(
   return lines.join("\n").trimEnd() + "\n";
 }
 
-export async function importFromPptx(buf: ArrayBuffer): Promise<MapWiseFile> {
+export async function importFromPptx(
+  buf: ArrayBuffer,
+  onProgress?: PptxProgress,
+): Promise<MapWiseFile> {
   let zip: JSZip;
   try {
     zip = await JSZip.loadAsync(buf);
@@ -190,27 +277,28 @@ export async function importFromPptx(buf: ArrayBuffer): Promise<MapWiseFile> {
   const orderedRids = Array.from(presDoc.getElementsByTagNameNS("*", "sldId"))
     .map((s) => relAttr(s, "id"))
     .filter((x): x is string => !!x);
+  const slidePaths = orderedRids
+    .map((rid) => presRels.get(rid))
+    .filter((p): p is string => !!p && !!zip.file(p));
 
   const width = 320;
   const height = Math.max(80, Math.round(width * heightRatio));
   const tray: SlideNode[] = [];
-  let slideNo = 0;
-  for (const rid of orderedRids) {
-    const slidePath = presRels.get(rid);
-    if (!slidePath) continue;
-    const slideFile = zip.file(slidePath);
-    if (!slideFile) continue;
-    slideNo += 1;
-    const slideDoc = parseXml(await slideFile.async("text"));
+  const mediaCache = new Map<string, Promise<string | null>>();
+
+  onProgress?.(0, slidePaths.length);
+  for (const [i, slidePath] of slidePaths.entries()) {
+    const slideDoc = parseXml(await zip.file(slidePath)!.async("text"));
     const content = parseSlideText(slideDoc);
-    const images = await slideImages(zip, slidePath);
+    const images = await slideImages(zip, slidePath, slideDoc, mediaCache);
     tray.push({
       type: "slide",
       id: newId(),
       position: { x: 0, y: 0 },
       size: { width, height },
-      markdown: buildMarkdown(slideNo, content, images),
+      markdown: buildMarkdown(i + 1, content, images),
     });
+    onProgress?.(i + 1, slidePaths.length);
   }
 
   if (tray.length === 0) {
