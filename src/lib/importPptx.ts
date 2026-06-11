@@ -143,6 +143,34 @@ function paragraphText(p: Element): string {
 interface SlideContent {
   title: string;
   bullets: { text: string; lvl: number }[];
+  tables: string[]; // GFM-markdown-tabeller
+}
+
+// Én tabellcelle: avsnitt joines med mellomrom, pipes escapes så GFM-tabellen
+// ikke knekker.
+function cellText(tc: Element): string {
+  return Array.from(tc.getElementsByTagNameNS("*", "p"))
+    .map(paragraphText)
+    .filter(Boolean)
+    .join(" ")
+    .replace(/\|/g, "\\|");
+}
+
+// PowerPoint-tabell (a:tbl i graphicFrame) → GFM-tabell. Første rad blir
+// header (GFM krever en); ujevne rader paddes til bredeste.
+function tableToMarkdown(tbl: Element): string | null {
+  const rows = Array.from(tbl.getElementsByTagNameNS("*", "tr")).map((tr) =>
+    Array.from(tr.getElementsByTagNameNS("*", "tc")).map(cellText),
+  );
+  const cols = Math.max(0, ...rows.map((r) => r.length));
+  if (rows.length === 0 || cols === 0) return null;
+  const line = (r: string[]) =>
+    `| ${[...r, ...Array(cols - r.length).fill("")].join(" | ")} |`;
+  return [
+    line(rows[0]),
+    `| ${Array(cols).fill("---").join(" | ")} |`,
+    ...rows.slice(1).map(line),
+  ].join("\n");
 }
 
 function parseSlideText(slideDoc: Document): SlideContent {
@@ -167,7 +195,13 @@ function parseSlideText(slideDoc: Document): SlideContent {
     }
   }
 
-  return { title: titleParts.join(" "), bullets };
+  // Tabeller ligger i p:graphicFrame (ikke p:sp), så de kolliderer ikke med
+  // tekst-løkka over.
+  const tables = Array.from(slideDoc.getElementsByTagNameNS("*", "tbl"))
+    .map(tableToMarkdown)
+    .filter((t): t is string => t !== null);
+
+  return { title: titleParts.join(" "), bullets, tables };
 }
 
 async function slideImages(
@@ -235,6 +269,9 @@ function buildMarkdown(
     lines.push(`${"  ".repeat(b.lvl)}- ${b.text}`);
   }
   if (content.bullets.length > 0) lines.push("");
+  for (const table of content.tables) {
+    lines.push(table, "");
+  }
   for (const uri of images) {
     lines.push(`![](${uri})`, "");
   }

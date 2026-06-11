@@ -73,6 +73,25 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
     setTimeout(() => textareaRef.current?.focus(), 0);
   }
 
+  function insertTable() {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+    // Blank linje før/etter — GFM-tabeller krever at de står alene.
+    const needsLeadingBreak = start > 0 && text[start - 1] !== "\n";
+    const md =
+      (needsLeadingBreak ? "\n\n" : "\n") +
+      "| Kolonne 1 | Kolonne 2 | Kolonne 3 |\n" +
+      "| --- | --- | --- |\n" +
+      "|  |  |  |\n" +
+      "|  |  |  |\n";
+    setText(text.slice(0, start) + md + text.slice(end));
+    // Plasser markøren i første datacelle.
+    pendingCursor.current = start + md.indexOf("|  |") + 2;
+    ta.focus();
+  }
+
   function onPaste(e: React.ClipboardEvent<HTMLTextAreaElement>) {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -237,6 +256,14 @@ function EditorImpl({ node, onClose, onSave }: EditorImplProps) {
             title="Sett inn bilde"
           >
             🖼 Bilde
+          </button>
+          <button
+            type="button"
+            onClick={insertTable}
+            className="rounded border border-neutral-300 bg-white px-2 py-1 hover:bg-neutral-100"
+            title="Sett inn tabell (markdown)"
+          >
+            ▦ Tabell
           </button>
           <span className="ml-auto text-neutral-400">Lim inn bilde direkte med Ctrl+V</span>
         </div>
