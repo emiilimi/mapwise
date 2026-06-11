@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { importFromHtml } from "./lib/importHtml";
+import { loadMap, saveMap } from "./lib/autosave";
 import { Canvas } from "./canvas/Canvas";
-import { StoreProvider, useStore } from "./state/store";
+import { StoreProvider, useMap, useStore } from "./state/store";
+import type { MapState } from "./state/reducer";
 import { ToolProvider } from "./hooks/useTool";
 import { useKeyboard } from "./hooks/useKeyboard";
 import { Toolbar } from "./toolbar/Toolbar";
@@ -13,60 +15,76 @@ import { PresentMode } from "./present/PresentMode";
 import { SlidePanel, SidebarToggle } from "./sidebar/SlidePanel";
 import { useTool } from "./hooks/useTool";
 import { newId } from "./lib/id";
-import { DEFAULT_SLIDE_SIZE } from "./types";
+import { DEFAULT_SETTINGS, DEFAULT_SLIDE_SIZE, FILE_VERSION, type MapWiseFile } from "./types";
 
-// Midlertidig seed for å se noe på kartet før import/eksport finnes.
-function useSeed() {
-  const { state, dispatch } = useStore();
-  // StrictMode kjører effekten to ganger i dev; closure-kapret state er
-  // tom begge ganger. Uten denne guarden dispatches seedet to ganger og vi
-  // får overlappende duplikater av alle noder.
-  const seeded = useRef(false);
-  useEffect(() => {
-    if (seeded.current) return;
-    if (state.present.nodes.length > 0) {
-      seeded.current = true;
-      return;
-    }
-    seeded.current = true;
-    const a = newId();
-    const b = newId();
-    dispatch({
-      type: "ADD_NODE",
-      node: {
+// Demokart for førstegangsbesøk (ingen autolagring funnet).
+function demoFile(): MapWiseFile {
+  const a = newId();
+  const b = newId();
+  return {
+    version: FILE_VERSION,
+    settings: DEFAULT_SETTINGS,
+    nodes: [
+      {
         type: "slide",
         id: a,
         position: { x: 0, y: 0 },
         size: DEFAULT_SLIDE_SIZE,
         markdown: `---\nslide: 1\nthumbnail: Start\n---\n\n# Velkommen\n\nDette er **MapWise**.`,
       },
-    });
-    dispatch({
-      type: "ADD_NODE",
-      node: {
+      {
         type: "slide",
         id: b,
         position: { x: 420, y: 0 },
         size: DEFAULT_SLIDE_SIZE,
         markdown: `---\nslide: 2\nthumbnail: Hovedpoeng\n---\n\n# Punkt to\n\n- Linje\n- Linje\n`,
       },
-    });
-    dispatch({
-      type: "ADD_NODE",
-      node: {
+      {
         type: "text",
         id: newId(),
         position: { x: 200, y: 280 },
         content: "Tekstnotat på kartet",
       },
-    });
-    dispatch({ type: "ADD_EDGE", edge: { id: newId(), from: a, to: b } });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    ],
+    edges: [{ id: newId(), from: a, to: b }],
+    tray: [],
+  };
+}
+
+// Start-state: gjenopprett autolagring, ellers demokartet. Lages som initial
+// state (ikke dispatch) så boot ikke blir en undo-frame — Ctrl+Z rett etter
+// oppstart skal ikke kunne tømme kartet.
+function initialState(): MapState {
+  const file = loadMap() ?? demoFile();
+  return {
+    version: file.version,
+    settings: file.settings,
+    nodes: file.nodes,
+    edges: file.edges,
+    tray: file.tray ?? [],
+    importedAt: 0,
+  };
+}
+
+// Debounced autolagring til localStorage ved hver endring av kartet.
+function useAutosave() {
+  const map = useMap();
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      saveMap({
+        version: map.version,
+        settings: map.settings,
+        nodes: map.nodes,
+        edges: map.edges,
+        tray: map.tray,
+      });
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [map]);
 }
 
 function Shell() {
-  useSeed();
+  useAutosave();
   useKeyboard();
   const { openSettings, openPresent, openExport, showSidebar } = useTool();
   const { dispatch } = useStore();
@@ -103,6 +121,26 @@ function Shell() {
     }
   }
 
+  function onNewMap() {
+    if (
+      !confirm(
+        "Starte nytt, tomt kart? Gjeldende kart erstattes (Ctrl+Z angrer, og eksporter først hvis du vil beholde det).",
+      )
+    ) {
+      return;
+    }
+    dispatch({
+      type: "REPLACE_ALL",
+      file: {
+        version: FILE_VERSION,
+        settings: DEFAULT_SETTINGS,
+        nodes: [],
+        edges: [],
+        tray: [],
+      },
+    });
+  }
+
   return (
     <div className="flex h-screen w-screen flex-col">
       <Toolbar
@@ -110,6 +148,7 @@ function Shell() {
         onPresent={() => openPresent("explore")}
         onExport={openExport}
         onOpenFile={() => fileInputRef.current?.click()}
+        onNewMap={onNewMap}
       />
       <div className="flex min-h-0 flex-1">
         {showSidebar && <SlidePanel />}
@@ -147,8 +186,10 @@ function Shell() {
 }
 
 export default function App() {
+  // Beregn én gang ved oppstart (ikke per render).
+  const [initial] = useState(initialState);
   return (
-    <StoreProvider>
+    <StoreProvider initial={initial}>
       <ToolProvider>
         <Shell />
       </ToolProvider>

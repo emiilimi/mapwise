@@ -7,6 +7,7 @@ interface Props {
   onPresent: () => void;
   onExport: () => void;
   onOpenFile: () => void;
+  onNewMap: () => void;
 }
 
 // Ikonene er tekst/Unicode for å unngå ikon-bibliotek-dep i Steg 5.
@@ -16,6 +17,7 @@ export function Toolbar({
   onPresent,
   onExport,
   onOpenFile,
+  onNewMap,
 }: Props) {
   const { tool, setTool, toggleShortcuts, showSidebar, toggleSidebar } = useTool();
   const { undo, redo, canUndo, canRedo } = useStore();
@@ -83,6 +85,7 @@ export function Toolbar({
       />
 
       <div className="ml-auto flex items-center gap-1">
+        <ToolButton icon="＋" label="Nytt" onClick={onNewMap} title="Nytt tomt kart" />
         <ToolButton icon="▶" label="Presenter" onClick={onPresent} title="Åpne presentasjonsmodus" />
         <ToolButton icon="⤓" label="Eksport" onClick={onExport} title="Eksporter til HTML" />
         <ToolButton icon="📂" label="Åpne" onClick={onOpenFile} title="Importer fra HTML eller PowerPoint (.pptx)" />

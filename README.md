@@ -84,6 +84,12 @@ PowerPoint/Google Slides.
 
 Eksporterte filer kan importeres tilbake i editoren.
 
+## Lagring
+
+Arbeid **autolagres i nettleseren** (localStorage) og gjenopprettes ved neste
+besøk. Det er likevel per-nettleser og kan ryke ved opprydding — **eksporter
+til HTML for varig lagring**. «Nytt»-knappen starter et tomt kart.
+
 ## Kjøring
 
 Krever Node 20+ (utviklet med Node 24). pnpm via Corepack:
